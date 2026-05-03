@@ -1,0 +1,66 @@
+{
+  "donos": [
+    {
+      "id": "dono-1",
+      "nome": "Joao Silva",
+      "telefone": "(11) 99999-9999",
+      "busca": true
+    },
+    {
+      "id": "dono-2",
+      "nome": "Ana Souza",
+      "telefone": "(11) 98888-8888",
+      "busca": false
+    }
+  ],
+  "pets": [
+    {
+      "id": "pet-1",
+      "nome": "Rex",
+      "raca": "Golden Retriever",
+      "porte": "Grande",
+      "donoId": "dono-1",
+      "foto": "https://placedog.net/200/200?id=1"
+    },
+    {
+      "id": "pet-2",
+      "nome": "Mia",
+      "raca": "Persa",
+      "porte": "Pequeno",
+      "donoId": "dono-2",
+      "foto": ""
+    }
+  ],
+  "agendamentos": [
+    {
+      "id": "ag-1",
+      "petId": "pet-1",
+      "servico": "Banho e Tosa",
+      "data": "02/05/2026",
+      "horario": "10:00",
+      "pago": true,
+      "preco": "80,00",
+      "lamina": "3",
+      "observacoes": "Atendimento marcado.",
+      "imagemUri": "",
+      "pacoteId": null,
+      "numeroBanho": null
+    },
+    {
+      "id": "ag-2",
+      "petId": "pet-2",
+      "servico": "Banho",
+      "data": "02/05/2026",
+      "horario": "14:30",
+      "pago": false,
+      "preco": "50,00",
+      "lamina": "-",
+      "observacoes": "Cliente prefere retirada no fim da tarde.",
+      "imagemUri": "",
+      "pacoteId": null,
+      "numeroBanho": null
+    }
+  ],
+  "historico": [],
+  "pacotes": []
+}

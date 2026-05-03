@@ -59,4 +59,78 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
+
+  toggle: {
+    backgroundColor: "#fff4e5",
+    borderRadius: 10,
+    padding: 12,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  toggleAtivo: {
+    backgroundColor: "#e8f5e9",
+  },
+
+  toggleTexto: {
+    color: "#d97800",
+    fontWeight: "700",
+  },
+
+  toggleTextoAtivo: {
+    color: "#4CAF50",
+  },
+
+  preview: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    alignSelf: "center",
+    marginBottom: 10,
+    backgroundColor: "#eee",
+  },
+
+  semImagem: {
+    height: 90,
+    borderRadius: 10,
+    backgroundColor: "#f5f5f5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+
+  semImagemTexto: {
+    color: "#777",
+    fontWeight: "600",
+  },
+
+  linhaBotoes: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  botaoFoto: {
+    flex: 1,
+    backgroundColor: "#eef4ff",
+    borderRadius: 10,
+    padding: 12,
+    alignItems: "center",
+  },
+
+  textoFoto: {
+    color: "#2f80ed",
+    fontWeight: "700",
+  },
+
+  botaoRemover: {
+    backgroundColor: "#fff1f0",
+    borderRadius: 10,
+    padding: 12,
+    alignItems: "center",
+  },
+
+  textoRemover: {
+    color: "#F44336",
+    fontWeight: "700",
+  },
 });

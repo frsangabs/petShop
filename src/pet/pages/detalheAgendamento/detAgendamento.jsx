@@ -1,29 +1,79 @@
-import { View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Text, TouchableOpacity, View } from "react-native";
 import DetalhesAgendamento from "../../components/detalheAgendamento";
+import Menu from "../../components/navbar";
+import { usePetShop } from "../../context/PetShopContext";
+import { styles } from "./styles";
 
 function DetalhesPage() {
-  const dados = {
-    nomePet: "Rex",
-    raca: "Golden Retriever",
-    porte: "Grande",
-    preco: "80,00",
-    lamina: "3",
-    comportamento: true,
-    observacoes:
-      "Pet muito tranquilo, aceitou bem o banho e a tosa. Não apresentou resistência.",
-  };
+  const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const {
+    obterAgendamento,
+    obterPet,
+    alternarPagamento,
+    cancelarAgendamento,
+    concluirAgendamento,
+  } = usePetShop();
+  const agendamento = obterAgendamento(id);
+  const pet = agendamento ? obterPet(agendamento.petId) : null;
+
+  if (!agendamento || !pet) {
+    return (
+      <View style={styles.container}>
+        <Menu />
+        <View style={styles.card}>
+          <Text style={styles.titulo}>Agendamento nao encontrado</Text>
+          <TouchableOpacity style={styles.botao} onPress={() => router.replace("/agendamentos")}>
+            <Text style={styles.textoBotao}>Voltar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  function concluir() {
+    concluirAgendamento(agendamento.id);
+    router.replace("/historico");
+  }
+
+  function cancelar() {
+    cancelarAgendamento(agendamento.id);
+    router.replace("/agendamentos");
+  }
 
   return (
-    <View>
+    <View style={styles.container}>
+      <Menu />
       <DetalhesAgendamento
-        nomePet={dados.nomePet}
-        raca={dados.raca}
-        porte={dados.porte}
-        preco={dados.preco}
-        lamina={dados.lamina}
-        comportamento={dados.comportamento}
-        observacoes={dados.observacoes}
+        nomePet={pet.nome}
+        raca={`${pet.raca} - ${agendamento.data} ${agendamento.horario}`}
+        porte={pet.porte}
+        preco={agendamento.preco}
+        lamina={agendamento.lamina}
+        comportamento={agendamento.pago}
+        observacoes={agendamento.observacoes || "Sem observacoes."}
+        imagemUri={agendamento.imagemUri}
       />
+
+      <View style={styles.acoes}>
+        <TouchableOpacity
+          style={styles.botaoSecundario}
+          onPress={() => alternarPagamento(agendamento.id)}
+        >
+          <Text style={styles.textoSecundario}>
+            {agendamento.pago ? "Marcar pendente" : "Marcar pago"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.botao} onPress={concluir}>
+          <Text style={styles.textoBotao}>Concluir atendimento</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.botaoPerigo} onPress={cancelar}>
+          <Text style={styles.textoBotao}>Cancelar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

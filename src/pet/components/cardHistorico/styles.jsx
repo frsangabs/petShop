@@ -51,4 +51,5 @@ export const styles = StyleSheet.create({
     color: "#777",
     marginTop: 4,
   },
+
 });

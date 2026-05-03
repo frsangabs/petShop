@@ -9,6 +9,12 @@ export const styles = StyleSheet.create({
 
   lista: {
     padding: 15,
-    paddingBottom: 100, // espaço pra navbar
+    paddingBottom: 100,
+  },
+
+  vazio: {
+    color: "#777",
+    textAlign: "center",
+    marginTop: 30,
   },
 });

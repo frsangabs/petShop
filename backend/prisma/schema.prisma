@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Dono {
+  id       String @id
+  nome     String
+  telefone String
+  busca    Boolean @default(false)
+  pets     Pet[]
+
+  @@map("donos")
+}
+
+model Pet {
+  id            String         @id
+  nome          String
+  raca          String
+  porte         String
+  foto          String         @default("")
+  donoId        String
+  dono          Dono           @relation(fields: [donoId], references: [id], onDelete: Cascade)
+  agendamentos  Agendamento[]
+  historicos    Historico[]
+  pacotesBanhos PacoteBanhos[]
+
+  @@map("pets")
+}
+
+model PacoteBanhos {
+  id                String        @id
+  petId             String
+  quantidadeBanhos  Int
+  dataPrimeiroBanho String
+  horario           String
+  servico           String
+  criadoEm          DateTime      @default(now())
+  pet               Pet           @relation(fields: [petId], references: [id], onDelete: Cascade)
+  agendamentos      Agendamento[]
+
+  @@map("pacotes_banhos")
+}
+
+model Agendamento {
+  id          String        @id
+  petId       String
+  servico     String
+  data        String
+  horario     String
+  pago        Boolean       @default(false)
+  preco       String        @default("0,00")
+  lamina      String        @default("-")
+  observacoes String        @default("Sem observacoes.")
+  imagemUri   String        @default("")
+  pacoteId    String?
+  numeroBanho Int?
+  pet         Pet           @relation(fields: [petId], references: [id], onDelete: Cascade)
+  pacote      PacoteBanhos? @relation(fields: [pacoteId], references: [id], onDelete: SetNull)
+
+  @@map("agendamentos")
+}
+
+model Historico {
+  id          String @id
+  petId       String
+  servico     String
+  data        String
+  horario     String
+  pago        Boolean @default(false)
+  preco       String  @default("0,00")
+  lamina      String  @default("-")
+  observacoes String  @default("Sem observacoes.")
+  imagemUri   String  @default("")
+  pacoteId    String?
+  numeroBanho Int?
+  concluidoEm String
+  pet         Pet     @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@map("historico")
+}

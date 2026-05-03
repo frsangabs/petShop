@@ -3,17 +3,15 @@ import { StyleSheet } from "react-native";
 export const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 15,
     marginBottom: 12,
-
     elevation: 3,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 6,
-
     borderLeftWidth: 5,
-    borderLeftColor: "#F44336", // vermelho = pendente
+    borderLeftColor: "#F44336",
   },
 
   cardPago: {
@@ -25,9 +23,11 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: 10,
   },
 
   nome: {
+    flex: 1,
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
@@ -67,16 +67,55 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // 🔥 cores por porte
   portePequeno: {
     color: "#4CAF50",
   },
 
-  porteMédio: {
+  porteMedio: {
     color: "#FF9800",
   },
 
   porteGrande: {
     color: "#F44336",
+  },
+
+  acoes: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+
+  botaoSecundario: {
+    backgroundColor: "#eef4ff",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+
+  botaoConcluir: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+
+  botaoCancelar: {
+    backgroundColor: "#F44336",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+
+  textoSecundario: {
+    color: "#2f80ed",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  textoAcao: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

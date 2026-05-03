@@ -2,19 +2,26 @@ import { useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./styles";
 
-function Agenda({ horarios }) {
+function formatarData(data) {
+  return data.toLocaleDateString("pt-BR");
+}
+
+function Agenda({
+  horarios,
+  agendamentos = [],
+  obterPet,
+  onSelecionarHorario,
+  onAbrirAgendamento,
+}) {
   const hoje = new Date();
 
   const [dataSelecionada, setDataSelecionada] = useState(hoje);
   const [horarioSelecionado, setHorarioSelecionado] = useState(null);
 
-  // gera dias do mês corretamente
   function gerarDiasDoMes(dataBase) {
     const ano = dataBase.getFullYear();
     const mes = dataBase.getMonth();
-
     const totalDias = new Date(ano, mes + 1, 0).getDate();
-
     const dias = [];
 
     for (let i = 1; i <= totalDias; i++) {
@@ -31,14 +38,13 @@ function Agenda({ horarios }) {
   }
 
   const dias = gerarDiasDoMes(dataSelecionada);
+  const dataAtual = formatarData(dataSelecionada);
 
   return (
     <FlatList
       data={horarios}
       keyExtractor={(item) => item}
       contentContainerStyle={styles.lista}
-
-      // 🔥 HEADER (calendário)
       ListHeaderComponent={
         <FlatList
           data={dias}
@@ -48,8 +54,7 @@ function Agenda({ horarios }) {
           keyExtractor={(item) => item.dia.toString()}
           renderItem={({ item }) => {
             const ativo =
-              item.dataCompleta.toDateString() ===
-              dataSelecionada.toDateString();
+              item.dataCompleta.toDateString() === dataSelecionada.toDateString();
 
             return (
               <TouchableOpacity
@@ -68,23 +73,38 @@ function Agenda({ horarios }) {
           }}
         />
       }
-
-      // 🔥 HORÁRIOS
       renderItem={({ item }) => {
         const ativo = horarioSelecionado === item;
+        const agendamento = agendamentos.find(
+          (agenda) => agenda.data === dataAtual && agenda.horario === item
+        );
+        const pet = agendamento ? obterPet?.(agendamento.petId) : null;
+        const ocupado = Boolean(agendamento);
 
         return (
           <TouchableOpacity
-            style={[styles.card, ativo && styles.cardSelecionado]}
-            onPress={() => setHorarioSelecionado(item)}
+            style={[
+              styles.card,
+              ativo && styles.cardSelecionado,
+              ocupado && styles.cardOcupado,
+            ]}
+            onPress={() => {
+              setHorarioSelecionado(item);
+              if (agendamento) {
+                onAbrirAgendamento?.(agendamento.id);
+                return;
+              }
+
+              onSelecionarHorario?.({ data: dataAtual, horario: item });
+            }}
           >
             <View style={styles.linha}>
-              <Text style={styles.icone}>🐾</Text>
+              <Text style={styles.icone}>{ocupado ? "!" : "+"}</Text>
 
-              <Text style={styles.horario}>{item}</Text>
+              <Text style={[styles.horario, ativo && styles.textoAtivo]}>{item}</Text>
 
               <Text style={[styles.status, ativo && styles.statusAtivo]}>
-                {ativo ? "Selecionado" : "Disponível"}
+                {ocupado ? pet?.nome ?? "Agendado" : "Agendar"}
               </Text>
             </View>
           </TouchableOpacity>

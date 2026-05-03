@@ -6,17 +6,14 @@ export const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     height: 80,
-
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderColor: "#ddd",
-
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-
     elevation: 10,
-    zIndex: 10, // 🔥 garante que fique na frente
+    zIndex: 10,
   },
 
   grid: {
@@ -26,17 +23,19 @@ export const styles = StyleSheet.create({
   },
 
   card: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  icone: {
-    fontSize: 22,
-    marginBottom: 2,
+  titulo: {
+    fontSize: 10,
+    color: "#333",
+    textAlign: "center",
   },
 
-  titulo: {
-    fontSize: 12,
-    color: "#333",
+  tituloAtivo: {
+    color: "#2f80ed",
+    fontWeight: "700",
   },
 });

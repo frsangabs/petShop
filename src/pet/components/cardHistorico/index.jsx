@@ -1,33 +1,18 @@
-import { Text, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./styles";
 
-function CardHistorico({
-  nomePet,
-  servico,
-  lamina,
-  preco,
-  data,
-}) {
+function CardHistorico({ nomePet, servico, lamina, preco, data, onPress }) {
   return (
-    <View style={styles.card}>
-      
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.topo}>
         <Text style={styles.nome}>{nomePet}</Text>
         <Text style={styles.preco}>R$ {preco}</Text>
       </View>
 
-      <Text style={styles.servico}>
-        Serviço: {servico}
-      </Text>
-
-      <Text style={styles.lamina}>
-        Lâmina: {lamina}
-      </Text>
-
-      <Text style={styles.data}>
-        Data: {data}
-      </Text>
-    </View>
+      <Text style={styles.servico}>Servico: {servico}</Text>
+      <Text style={styles.lamina}>Lamina: {lamina}</Text>
+      <Text style={styles.data}>Data: {data}</Text>
+    </TouchableOpacity>
   );
 }
 

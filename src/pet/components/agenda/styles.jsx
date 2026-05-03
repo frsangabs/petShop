@@ -22,6 +22,11 @@ export const styles = StyleSheet.create({
     backgroundColor: "#4CAF50",
   },
 
+  cardOcupado: {
+    borderLeftColor: "#2196F3",
+    backgroundColor: "#eef6ff",
+  },
+
   linha: {
     flexDirection: "row",
     alignItems: "center",
