@@ -6,6 +6,7 @@ import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
+import { dataHoraParaTempo } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
 import { styles } from "./styles";
 
@@ -107,12 +108,31 @@ function Pets() {
     setEditando(false);
   }
 
-  const ultimosAgendamentos = petSelecionado
-    ? [...agendamentos, ...historico]
+  const proximosBanhos = petSelecionado
+    ? agendamentos
         .filter((item) => item.petId === petSelecionado.id)
-        .slice(-3)
-        .reverse()
+        .sort((a, b) => dataHoraParaTempo(a) - dataHoraParaTempo(b))
+        .slice(0, 4)
     : [];
+
+  const ultimosBanhos = petSelecionado
+    ? historico
+        .filter((item) => item.petId === petSelecionado.id)
+        .sort(
+          (a, b) =>
+            dataHoraParaTempo({ ...b, data: b.concluidoEm ?? b.data }) -
+            dataHoraParaTempo({ ...a, data: a.concluidoEm ?? a.data })
+        )
+        .slice(0, 4)
+    : [];
+
+  function etiquetaPacote(item) {
+    if (!item.pacoteId) {
+      return "Avulso";
+    }
+
+    return item.numeroBanho ? `Pacote - banho ${item.numeroBanho}` : "Pacote";
+  }
 
   return (
     <View style={styles.container}>
@@ -208,17 +228,59 @@ function Pets() {
                 <Image source={{ uri: petSelecionado.foto }} style={styles.fotoModal} />
               </>
             ) : null}
-            <Text style={styles.modalTitulo}>Ultimos agendamentos</Text>
-            {ultimosAgendamentos.length ? (
-              ultimosAgendamentos.map((item) => (
-                <Text key={`${item.id}-${item.concluidoEm ?? "aberto"}`} style={styles.modalTexto}>
-                  {item.data} {item.horario} - {item.servico}
-                  {item.concluidoEm ? " (concluido)" : " (em aberto)"}
-                </Text>
-              ))
-            ) : (
-              <Text style={styles.modalTexto}>Nenhum agendamento encontrado.</Text>
-            )}
+            <View style={styles.banhosGrid}>
+              <View style={styles.banhosColuna}>
+                <Text style={styles.modalTitulo}>Proximos banhos</Text>
+                {proximosBanhos.length ? (
+                  proximosBanhos.map((item) => (
+                    <View key={item.id} style={styles.banhoItem}>
+                      <View style={styles.banhoTopo}>
+                        <Text style={styles.modalTexto}>
+                          {item.data} {item.horario}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.etiquetaBanho,
+                            item.pacoteId && styles.etiquetaPacote,
+                          ]}
+                        >
+                          {etiquetaPacote(item)}
+                        </Text>
+                      </View>
+                      <Text style={styles.banhoServico}>{item.servico}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.modalTexto}>Nenhum banho agendado.</Text>
+                )}
+              </View>
+
+              <View style={styles.banhosColuna}>
+                <Text style={styles.modalTitulo}>Ultimos banhos</Text>
+                {ultimosBanhos.length ? (
+                  ultimosBanhos.map((item) => (
+                    <View key={item.id} style={styles.banhoItem}>
+                      <View style={styles.banhoTopo}>
+                        <Text style={styles.modalTexto}>
+                          {item.concluidoEm ?? item.data} {item.horario}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.etiquetaBanho,
+                            item.pacoteId && styles.etiquetaPacote,
+                          ]}
+                        >
+                          {etiquetaPacote(item)}
+                        </Text>
+                      </View>
+                      <Text style={styles.banhoServico}>{item.servico}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.modalTexto}>Nenhum banho concluido.</Text>
+                )}
+              </View>
+            </View>
           </View>
         }
         editExtra={

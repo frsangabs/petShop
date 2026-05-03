@@ -9,6 +9,7 @@ const items = [
   { label: "Donos", icon: "person", path: "/donos" },
   { label: "Agendamentos", icon: "calendar", path: "/agendamentos" },
   { label: "Historico", icon: "document-text", path: "/historico" },
+  { label: "Dashboard", icon: "bar-chart", path: "/dashboard" },
 ];
 
 function Menu() {

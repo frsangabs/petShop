@@ -27,6 +27,7 @@ function Home() {
         obterPet={obterPet}
         onSelecionarHorario={abrirAgendamento}
         onAbrirAgendamento={(id) => router.push(`/detalhe-agendamento/${id}`)}
+        onAbrirHorarioOcupado={() => router.push("/agendamentos")}
       />
     </View>
   );

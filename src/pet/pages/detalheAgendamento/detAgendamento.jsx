@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 import DetalhesAgendamento from "../../components/detalheAgendamento";
 import Menu from "../../components/navbar";
 import { usePetShop } from "../../context/PetShopContext";
@@ -33,6 +33,14 @@ function DetalhesPage() {
   }
 
   function concluir() {
+    if (!agendamento.pago) {
+      Alert.alert(
+        "Pagamento pendente",
+        "Marque o pagamento como pago antes de concluir o atendimento."
+      );
+      return;
+    }
+
     concluirAgendamento(agendamento.id);
     router.replace("/historico");
   }
@@ -52,6 +60,7 @@ function DetalhesPage() {
         preco={agendamento.preco}
         lamina={agendamento.lamina}
         comportamento={agendamento.pago}
+        pagoEm={agendamento.pagoEm}
         observacoes={agendamento.observacoes || "Sem observacoes."}
         imagemUri={agendamento.imagemUri}
       />

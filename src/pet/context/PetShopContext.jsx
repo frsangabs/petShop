@@ -1,4 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import {
+  formatarDataHoraAtual,
+  formatarHorario,
+  formatarPreco,
+} from "../utils/formatadores";
 
 const PetShopContext = createContext(null);
 const API_URL = "http://localhost:3333";
@@ -45,6 +50,7 @@ const dadosIniciais = {
       data: "02/05/2026",
       horario: "10:00",
       pago: true,
+      pagoEm: "02/05/2026 10:00",
       preco: "80,00",
       lamina: "3",
       observacoes: "Atendimento marcado.",
@@ -59,6 +65,7 @@ const dadosIniciais = {
       data: "02/05/2026",
       horario: "14:30",
       pago: false,
+      pagoEm: "",
       preco: "50,00",
       lamina: "-",
       observacoes: "Cliente prefere retirada no fim da tarde.",
@@ -161,11 +168,9 @@ export function PetShopProvider({ children }) {
     }
   }
 
-  function buscarDonoPorNomeTelefone(nome, telefone) {
+  function buscarDonoPorTelefone(telefone) {
     return donos.find(
-      (dono) =>
-        dono.nome.trim().toLowerCase() === String(nome).trim().toLowerCase() ||
-        dono.telefone.trim() === String(telefone).trim()
+      (dono) => dono.telefone.trim() === String(telefone).trim()
     );
   }
 
@@ -179,7 +184,7 @@ export function PetShopProvider({ children }) {
       () => {
         const donoExistente = donoId
           ? donos.find((item) => item.id === donoId)
-          : buscarDonoPorNomeTelefone(dono, telefone);
+          : buscarDonoPorTelefone(telefone);
         const novoDonoId = donoExistente?.id ?? novoId("dono");
 
         if (!donoExistente) {
@@ -219,9 +224,10 @@ export function PetShopProvider({ children }) {
           petId: dados.petId,
           servico: dados.servico.trim(),
           data: dados.data.trim(),
-          horario: dados.horario.trim(),
+          horario: formatarHorario(dados.horario),
           pago: dados.pago,
-          preco: dados.preco.trim() || "0,00",
+          pagoEm: dados.pago ? formatarDataHoraAtual() : "",
+          preco: formatarPreco(dados.preco) || "0,00",
           lamina: dados.lamina.trim() || "-",
           observacoes: dados.observacoes.trim() || "Sem observacoes.",
           imagemUri: dados.imagemUri ?? "",
@@ -248,17 +254,21 @@ export function PetShopProvider({ children }) {
           quantidadeBanhos: quantidade,
           dataPrimeiroBanho: dados.data,
           horario: dados.horario,
-          servico: dados.servico,
+          servico: "Banho",
+          bonusServico: dados.bonusServico ?? "Tosa Higiênica",
+          bonusConcluido: false,
+          bonusConcluidoEm: "",
           criadoEm: new Date().toISOString(),
         };
         const novosAgendamentos = Array.from({ length: quantidade }, (_, index) => ({
           id: novoId("ag"),
           petId: dados.petId,
-          servico: dados.servico.trim(),
+          servico: "Banho",
           data: adicionarDias(dados.data, index * 7),
-          horario: dados.horario.trim(),
+          horario: formatarHorario(dados.horario),
           pago: dados.pago,
-          preco: dados.preco.trim() || "0,00",
+          pagoEm: dados.pago ? formatarDataHoraAtual() : "",
+          preco: formatarPreco(dados.preco) || "0,00",
           lamina: dados.lamina.trim() || "-",
           observacoes:
             index === 0
@@ -279,7 +289,34 @@ export function PetShopProvider({ children }) {
   function alternarPagamento(id) {
     const agendamento = agendamentos.find((item) => item.id === id);
     const pago = !agendamento?.pago;
-    return atualizarAgendamento(id, { pago });
+    const dadosPagamento = {
+      pago,
+      pagoEm: pago ? formatarDataHoraAtual() : "",
+    };
+
+    if (agendamento?.pacoteId) {
+      setAgendamentos((atuais) =>
+        atuais.map((item) =>
+          item.pacoteId === agendamento.pacoteId
+            ? { ...item, ...dadosPagamento }
+            : item
+        )
+      );
+      setHistorico((atuais) =>
+        atuais.map((item) =>
+          item.pacoteId === agendamento.pacoteId
+            ? { ...item, ...dadosPagamento }
+            : item
+        )
+      );
+
+      return sincronizar("/agendamentos/" + id, {
+        method: "PATCH",
+        body: JSON.stringify(dadosPagamento),
+      });
+    }
+
+    return atualizarAgendamento(id, dadosPagamento);
   }
 
   function atualizarPet(id, dados) {
@@ -314,6 +351,16 @@ export function PetShopProvider({ children }) {
     });
   }
 
+  function atualizarPacote(id, dados) {
+    setPacotes((atuais) =>
+      atuais.map((pacote) => (pacote.id === id ? { ...pacote, ...dados } : pacote))
+    );
+    return sincronizar("/pacotes/" + id, {
+      method: "PATCH",
+      body: JSON.stringify(dados),
+    });
+  }
+
   function atualizarHistorico(id, dados) {
     setHistorico((atuais) =>
       atuais.map((registro) =>
@@ -335,6 +382,10 @@ export function PetShopProvider({ children }) {
 
   function concluirAgendamento(id) {
     const agendamento = agendamentos.find((item) => item.id === id);
+
+    if (agendamento && !agendamento.pago) {
+      return { erro: "PAGAMENTO_PENDENTE" };
+    }
 
     if (agendamento) {
       setHistorico((atuais) => [
@@ -376,6 +427,7 @@ export function PetShopProvider({ children }) {
     atualizarDono,
     atualizarAgendamento,
     atualizarHistorico,
+    atualizarPacote,
     obterPet,
     obterDono,
     obterAgendamento,

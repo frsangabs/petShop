@@ -8,6 +8,7 @@ function DetalhesAgendamento({
   preco,
   lamina,
   comportamento,
+  pagoEm,
   observacoes,
   imagemUri,
 }) {
@@ -40,6 +41,11 @@ function DetalhesAgendamento({
         >
           {comportamento ? "Pago" : "Pendente"}
         </Text>
+      </View>
+
+      <View style={styles.linha}>
+        <Text style={styles.label}>Pago em:</Text>
+        <Text style={styles.valor}>{pagoEm || "-"}</Text>
       </View>
 
       <View style={styles.observacoesBox}>

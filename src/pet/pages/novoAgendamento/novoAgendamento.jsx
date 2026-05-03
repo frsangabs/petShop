@@ -1,6 +1,6 @@
 import { Picker } from "@react-native-picker/picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   Image,
@@ -13,7 +13,9 @@ import {
 
 import Menu from "../../components/navbar";
 import { usePetShop } from "../../context/PetShopContext";
+import { formatarHorario, formatarPreco } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
+import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
 
 function dataHoje() {
@@ -23,9 +25,15 @@ function dataHoje() {
 function NovoAgendamento() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { pets, obterDono, criarAgendamento, criarPacoteBanhos } = usePetShop();
+  const { pets, obterDono, criarPet, criarAgendamento, criarPacoteBanhos } =
+    usePetShop();
 
-  const [petId, setPetId] = useState(pets[0]?.id ?? "");
+  const [petId, setPetId] = useState("");
+  const [petBusca, setPetBusca] = useState("");
+  const [novoDono, setNovoDono] = useState("");
+  const [novoTelefone, setNovoTelefone] = useState("");
+  const [novaRaca, setNovaRaca] = useState("");
+  const [novoPorte, setNovoPorte] = useState("Pequeno");
   const [servico, setServico] = useState("Banho");
   const [data, setData] = useState(params.data ?? dataHoje());
   const [horario, setHorario] = useState(params.horario ?? "");
@@ -36,6 +44,24 @@ function NovoAgendamento() {
   const [imagemUri, setImagemUri] = useState("");
   const [pacote, setPacote] = useState(false);
   const [quantidadeBanhos, setQuantidadeBanhos] = useState(4);
+  const sugestoesPets = useMemo(() => {
+    const termo = petBusca.trim().toLowerCase();
+
+    if (!termo || petId) {
+      return [];
+    }
+
+    return pets
+      .filter((pet) => {
+        const dono = obterDono(pet.donoId);
+
+        return [pet.nome, dono?.nome, dono?.telefone].some((valor) =>
+          String(valor ?? "").toLowerCase().includes(termo)
+        );
+      })
+      .slice(0, 5);
+  }, [obterDono, petBusca, petId, pets]);
+  const [bonusServico, setBonusServico] = useState("Tosa Higiênica");
 
   async function escolherImagem() {
     const uri = await selecionarImagemLeve();
@@ -45,25 +71,76 @@ function NovoAgendamento() {
     }
   }
 
-  function salvar() {
-    if (!petId || !servico.trim() || !data.trim() || !horario.trim()) {
+  function alterarBuscaPet(valor) {
+    setPetBusca(valor);
+    setPetId("");
+  }
+
+  function selecionarPet(pet) {
+    const dono = obterDono(pet.donoId);
+
+    setPetId(pet.id);
+    setPetBusca(
+      `${pet.nome} - ${dono?.nome ?? "Sem dono"} - ${dono?.telefone ?? ""}`
+    );
+    setNovoDono("");
+    setNovoTelefone("");
+  }
+
+  async function obterOuCriarPetId() {
+    if (petId) {
+      return petId;
+    }
+
+    const nomePet = petBusca.trim();
+
+    if (!nomePet || !novoDono.trim() || !novoTelefone.trim()) {
+      return "";
+    }
+
+    const resultado = await criarPet({
+      nome: nomePet,
+      raca: novaRaca.trim() || "Nao informada",
+      porte: novoPorte,
+      dono: novoDono,
+      telefone: novoTelefone,
+      foto: "",
+      donoId: null,
+    });
+
+    return resultado?.pet?.id ?? "";
+  }
+
+  async function salvar() {
+    if (!servico.trim() || !data.trim() || !horario.trim()) {
       Alert.alert(
         "Campos obrigatorios",
-        "Escolha o pet e preencha servico, data e horario."
+        "Preencha servico, data e horario."
+      );
+      return;
+    }
+
+    const petSelecionadoId = await obterOuCriarPetId();
+
+    if (!petSelecionadoId) {
+      Alert.alert(
+        "Dados do pet",
+        "Selecione um pet existente ou preencha nome do pet, dono e telefone."
       );
       return;
     }
 
     const dados = {
-      petId,
-      servico,
+      petId: petSelecionadoId,
+      servico: pacote ? "Banho" : servico,
       data,
-      horario,
-      preco,
+      horario: formatarHorario(horario),
+      preco: formatarPreco(preco),
       lamina,
       observacoes,
       pago,
       imagemUri,
+      bonusServico,
     };
 
     if (pacote) {
@@ -90,28 +167,94 @@ function NovoAgendamento() {
           <Text style={styles.titulo}>Novo agendamento</Text>
 
           <Text style={styles.label}>Pet</Text>
-          <View style={styles.pickerContainer}>
-            <Picker selectedValue={petId} onValueChange={(value) => setPetId(value)}>
-              {pets.length === 0 && (
-                <Picker.Item label="Cadastre um pet primeiro" value="" />
-              )}
-              {pets.map((pet) => (
-                <Picker.Item
-                  key={pet.id}
-                  label={`${pet.nome} - ${obterDono(pet.donoId)?.nome ?? "Sem dono"}`}
-                  value={pet.id}
-                />
-              ))}
-            </Picker>
-          </View>
-
           <TextInput
-            placeholder="Servico"
-            value={servico}
-            onChangeText={setServico}
+            placeholder="Digite o nome do pet, dono ou telefone"
+            value={petBusca}
+            onChangeText={alterarBuscaPet}
             style={styles.input}
             placeholderTextColor="#999"
           />
+
+          {sugestoesPets.length ? (
+            <View style={styles.sugestoes}>
+              {sugestoesPets.map((pet) => {
+                const dono = obterDono(pet.donoId);
+
+                return (
+                  <TouchableOpacity
+                    key={pet.id}
+                    style={styles.sugestaoItem}
+                    onPress={() => selecionarPet(pet)}
+                  >
+                    <Text style={styles.sugestaoTitulo}>{pet.nome}</Text>
+                    <Text style={styles.sugestaoTexto}>
+                      {dono?.nome ?? "Sem dono"} - {dono?.telefone ?? "Sem telefone"}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {!petId && petBusca.trim() ? (
+            <View style={styles.campoNovoPet}>
+              <Text style={styles.ajuda}>
+                Se nao selecionar um pet existente, este pet sera cadastrado junto
+                com o dono.
+              </Text>
+              <TextInput
+                placeholder="Nome do dono"
+                value={novoDono}
+                onChangeText={setNovoDono}
+                style={styles.input}
+                placeholderTextColor="#999"
+              />
+              <TextInput
+                placeholder="Telefone do dono"
+                value={novoTelefone}
+                onChangeText={setNovoTelefone}
+                keyboardType="phone-pad"
+                style={styles.input}
+                placeholderTextColor="#999"
+              />
+              <TextInput
+                placeholder="Raca do pet (opcional)"
+                value={novaRaca}
+                onChangeText={setNovaRaca}
+                style={styles.input}
+                placeholderTextColor="#999"
+              />
+              <Text style={styles.label}>Porte do pet</Text>
+              <View style={styles.pickerContainer}>
+                <Picker selectedValue={novoPorte} onValueChange={setNovoPorte}>
+                  <Picker.Item label="Pequeno" value="Pequeno" />
+                  <Picker.Item label="Medio" value="Medio" />
+                  <Picker.Item label="Grande" value="Grande" />
+                </Picker>
+              </View>
+            </View>
+          ) : null}
+
+          <Text style={styles.label}>
+            {pacote ? "Servico do pacote" : "Servico"}
+          </Text>
+          {pacote ? (
+            <View style={styles.pickerContainer}>
+              <Text style={styles.valorFixo}>Banho</Text>
+            </View>
+          ) : (
+            <View style={styles.pickerContainer}>
+              <Picker selectedValue={servico} onValueChange={(value) => setServico(value)}>
+                {opcoesServicos.map((opcao) => (
+                  <Picker.Item
+                    key={opcao.value}
+                    label={opcao.label}
+                    value={opcao.value}
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
 
           <TextInput
             placeholder="Data"
@@ -125,6 +268,7 @@ function NovoAgendamento() {
             placeholder="Horario"
             value={horario}
             onChangeText={setHorario}
+            onBlur={() => setHorario(formatarHorario(horario))}
             style={styles.input}
             placeholderTextColor="#999"
           />
@@ -133,6 +277,7 @@ function NovoAgendamento() {
             placeholder="Preco (opcional)"
             value={preco}
             onChangeText={setPreco}
+            onBlur={() => setPreco(formatarPreco(preco))}
             keyboardType="decimal-pad"
             style={styles.input}
             placeholderTextColor="#999"
@@ -181,6 +326,24 @@ function NovoAgendamento() {
               <Text style={styles.ajuda}>
                 A partir da data do primeiro banho, os proximos serao criados com 7 dias de diferenca.
               </Text>
+              <Text style={styles.ajuda}>
+                Pacotes sempre geram banhos. Outros servicos entram como agendamento avulso.
+              </Text>
+              <Text style={styles.label}>Servico bonus do pacote</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={bonusServico}
+                  onValueChange={(value) => setBonusServico(value)}
+                >
+                  {opcoesServicos.map((opcao) => (
+                    <Picker.Item
+                      key={opcao.value}
+                      label={opcao.label}
+                      value={opcao.value}
+                    />
+                  ))}
+                </Picker>
+              </View>
             </View>
           ) : null}
 

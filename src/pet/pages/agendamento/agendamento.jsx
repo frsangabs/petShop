@@ -1,12 +1,19 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import { Alert, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import CardAgendamento from "../../components/cardAgendamento";
 import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
+import {
+  dataHoraParaTempo,
+  formatarDataHoraAtual,
+  formatarHorario,
+  formatarPreco,
+} from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
+import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
 
 function Agendamentos() {
@@ -42,9 +49,7 @@ function Agendamentos() {
   }
 
   function dataHoraParaOrdenacao(agendamento) {
-    const [dia, mes, ano] = String(agendamento.data).split("/").map(Number);
-    const [hora = 0, minuto = 0] = String(agendamento.horario).split(":").map(Number);
-    return new Date(ano, mes - 1, dia, hora, minuto).getTime();
+    return dataHoraParaTempo(agendamento);
   }
 
   const agendamentosFiltrados = agendamentos.filter((agendamento) => {
@@ -102,6 +107,16 @@ function Agendamentos() {
   }
 
   function concluir(id) {
+    const agendamento = agendamentos.find((item) => item.id === id);
+
+    if (!agendamento?.pago) {
+      Alert.alert(
+        "Pagamento pendente",
+        "Marque o pagamento como pago antes de concluir o atendimento."
+      );
+      return;
+    }
+
     concluirAgendamento(id);
     setAgendamentoSelecionado(null);
     setEditando(false);
@@ -121,8 +136,8 @@ function Agendamentos() {
     const dados = {
       servico: form.servico.trim(),
       data: form.data.trim(),
-      horario: form.horario.trim(),
-      preco: form.preco.trim() || "0,00",
+      horario: formatarHorario(form.horario),
+      preco: formatarPreco(form.preco) || "0,00",
       lamina: form.lamina.trim() || "-",
       observacoes: form.observacoes.trim() || "Sem observacoes.",
       imagemUri: form.imagemUri,
@@ -134,9 +149,12 @@ function Agendamentos() {
   }
 
   function alternarPagamentoSelecionado(id) {
+    const pago = !agendamentoSelecionado?.pago;
+    const pagoEm = pago ? formatarDataHoraAtual() : "";
+
     alternarPagamento(id);
     setAgendamentoSelecionado((atual) =>
-      atual?.id === id ? { ...atual, pago: !atual.pago } : atual
+      atual?.id === id ? { ...atual, pago, pagoEm } : atual
     );
   }
   const petSelecionado = agendamentoSelecionado
@@ -214,6 +232,7 @@ function Agendamentos() {
             label: "Pagamento",
             valor: agendamentoSelecionado?.pago ? "Pago" : "Pendente",
           },
+          { label: "Pago em", valor: agendamentoSelecionado?.pagoEm },
           { label: "Preco", valor: `R$ ${agendamentoSelecionado?.preco ?? "0,00"}` },
           { label: "Lamina", valor: agendamentoSelecionado?.lamina },
           { label: "Observacoes", valor: agendamentoSelecionado?.observacoes },
@@ -227,6 +246,8 @@ function Agendamentos() {
           {
             label: "Servico",
             valor: form.servico,
+            tipo: "select",
+            opcoes: opcoesServicos,
             onChangeText: (valor) =>
               setForm((atual) => ({ ...atual, servico: valor })),
           },
@@ -240,11 +261,21 @@ function Agendamentos() {
             valor: form.horario,
             onChangeText: (valor) =>
               setForm((atual) => ({ ...atual, horario: valor })),
+            onBlur: () =>
+              setForm((atual) => ({
+                ...atual,
+                horario: formatarHorario(atual.horario),
+              })),
           },
           {
             label: "Preco",
             valor: form.preco,
             onChangeText: (valor) => setForm((atual) => ({ ...atual, preco: valor })),
+            onBlur: () =>
+              setForm((atual) => ({
+                ...atual,
+                preco: formatarPreco(atual.preco),
+              })),
             keyboardType: "decimal-pad",
           },
           {

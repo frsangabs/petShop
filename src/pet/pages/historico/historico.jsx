@@ -5,7 +5,14 @@ import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
+import {
+  dataHoraParaTempo,
+  dataHoraTextoParaTempo,
+  formatarHorario,
+  formatarPreco,
+} from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
+import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
 
 function Historico() {
@@ -35,18 +42,30 @@ function Historico() {
     return valores.some((valor) => String(valor ?? "").toLowerCase().includes(termo));
   }
 
-  const historicoFiltrado = historico.filter((registro) => {
-    const pet = obterPet(registro.petId);
-    const dono = pet ? obterDono(pet.donoId) : null;
-    return contemBusca(
-      pet?.nome,
-      dono?.nome,
-      dono?.telefone,
-      registro.servico,
-      registro.data,
-      registro.concluidoEm
-    );
-  });
+  const historicoFiltrado = historico
+    .filter((registro) => {
+      const pet = obterPet(registro.petId);
+      const dono = pet ? obterDono(pet.donoId) : null;
+      return contemBusca(
+        pet?.nome,
+        dono?.nome,
+        dono?.telefone,
+        registro.servico,
+        registro.data,
+        registro.concluidoEm,
+        registro.pagoEm
+      );
+    })
+    .sort((a, b) => {
+      const concluidoB = b.concluidoEm
+        ? dataHoraTextoParaTempo(`${b.concluidoEm} ${b.horario}`)
+        : dataHoraParaTempo(b);
+      const concluidoA = a.concluidoEm
+        ? dataHoraTextoParaTempo(`${a.concluidoEm} ${a.horario}`)
+        : dataHoraParaTempo(a);
+
+      return concluidoB - concluidoA;
+    });
 
   function abrirRegistro(registro) {
     setRegistroSelecionado(registro);
@@ -84,9 +103,9 @@ function Historico() {
     const dados = {
       servico: form.servico.trim(),
       data: form.data.trim(),
-      horario: form.horario.trim(),
+      horario: formatarHorario(form.horario),
       concluidoEm: form.concluidoEm.trim(),
-      preco: form.preco.trim() || "0,00",
+      preco: formatarPreco(form.preco) || "0,00",
       lamina: form.lamina.trim() || "-",
       observacoes: form.observacoes.trim() || "Sem observacoes.",
       imagemUri: form.imagemUri,
@@ -147,6 +166,7 @@ function Historico() {
               : "",
           },
           { label: "Concluido em", valor: registroSelecionado?.concluidoEm },
+          { label: "Pago em", valor: registroSelecionado?.pagoEm },
           { label: "Preco", valor: `R$ ${registroSelecionado?.preco ?? "0,00"}` },
           { label: "Lamina", valor: registroSelecionado?.lamina },
           { label: "Pagamento", valor: registroSelecionado?.pago ? "Pago" : "Pendente" },
@@ -161,6 +181,8 @@ function Historico() {
           {
             label: "Servico",
             valor: form.servico,
+            tipo: "select",
+            opcoes: opcoesServicos,
             onChangeText: (valor) =>
               setForm((atual) => ({ ...atual, servico: valor })),
           },
@@ -174,6 +196,11 @@ function Historico() {
             valor: form.horario,
             onChangeText: (valor) =>
               setForm((atual) => ({ ...atual, horario: valor })),
+            onBlur: () =>
+              setForm((atual) => ({
+                ...atual,
+                horario: formatarHorario(atual.horario),
+              })),
           },
           {
             label: "Concluido em",
@@ -185,6 +212,11 @@ function Historico() {
             label: "Preco",
             valor: form.preco,
             onChangeText: (valor) => setForm((atual) => ({ ...atual, preco: valor })),
+            onBlur: () =>
+              setForm((atual) => ({
+                ...atual,
+                preco: formatarPreco(atual.preco),
+              })),
             keyboardType: "decimal-pad",
           },
           {

@@ -12,6 +12,7 @@ function Agenda({
   obterPet,
   onSelecionarHorario,
   onAbrirAgendamento,
+  onAbrirHorarioOcupado,
 }) {
   const hoje = new Date();
 
@@ -75,11 +76,14 @@ function Agenda({
       }
       renderItem={({ item }) => {
         const ativo = horarioSelecionado === item;
-        const agendamento = agendamentos.find(
+        const agendamentosDoHorario = agendamentos.filter(
           (agenda) => agenda.data === dataAtual && agenda.horario === item
         );
-        const pet = agendamento ? obterPet?.(agendamento.petId) : null;
-        const ocupado = Boolean(agendamento);
+        const agendamento = agendamentosDoHorario[0];
+        const nomesPets = agendamentosDoHorario
+          .map((agenda) => obterPet?.(agenda.petId)?.nome)
+          .filter(Boolean);
+        const ocupado = agendamentosDoHorario.length > 0;
 
         return (
           <TouchableOpacity
@@ -90,7 +94,12 @@ function Agenda({
             ]}
             onPress={() => {
               setHorarioSelecionado(item);
-              if (agendamento) {
+              if (agendamentosDoHorario.length > 1) {
+                onAbrirHorarioOcupado?.({ data: dataAtual, horario: item });
+                return;
+              }
+
+              if (agendamentosDoHorario.length === 1) {
                 onAbrirAgendamento?.(agendamento.id);
                 return;
               }
@@ -104,7 +113,11 @@ function Agenda({
               <Text style={[styles.horario, ativo && styles.textoAtivo]}>{item}</Text>
 
               <Text style={[styles.status, ativo && styles.statusAtivo]}>
-                {ocupado ? pet?.nome ?? "Agendado" : "Agendar"}
+                {ocupado
+                  ? agendamentosDoHorario.length > 1
+                    ? `${agendamentosDoHorario.length} pets: ${nomesPets.slice(0, 2).join(", ")}`
+                    : nomesPets[0] ?? "Agendado"
+                  : "Agendar"}
               </Text>
             </View>
           </TouchableOpacity>

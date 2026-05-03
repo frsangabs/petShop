@@ -45,6 +45,54 @@ export const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
+  banhosGrid: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
+  },
+
+  banhosColuna: {
+    flex: 1,
+    backgroundColor: "#f7f9fa",
+    borderRadius: 10,
+    padding: 10,
+  },
+
+  banhoItem: {
+    borderTopWidth: 1,
+    borderTopColor: "#e7ecef",
+    paddingTop: 8,
+    marginTop: 8,
+  },
+
+  banhoTopo: {
+    gap: 6,
+  },
+
+  banhoServico: {
+    color: "#333",
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+
+  etiquetaBanho: {
+    alignSelf: "flex-start",
+    backgroundColor: "#eef4ff",
+    borderRadius: 8,
+    color: "#2f80ed",
+    fontSize: 11,
+    fontWeight: "800",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    overflow: "hidden",
+  },
+
+  etiquetaPacote: {
+    backgroundColor: "#e8f5e9",
+    color: "#4CAF50",
+  },
+
   fotoModal: {
     width: 160,
     height: 160,

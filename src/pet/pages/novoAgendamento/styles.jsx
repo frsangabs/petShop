@@ -49,6 +49,48 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  valorFixo: {
+    color: "#333",
+    fontSize: 14,
+    fontWeight: "700",
+    padding: 14,
+  },
+
+  sugestoes: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e6e6e6",
+    borderRadius: 10,
+    marginTop: -4,
+    marginBottom: 10,
+    overflow: "hidden",
+  },
+
+  sugestaoItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+
+  sugestaoTitulo: {
+    color: "#333",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  sugestaoTexto: {
+    color: "#777",
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  campoNovoPet: {
+    backgroundColor: "#f8faf9",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+
   input: {
     backgroundColor: "#f5f5f5",
     borderRadius: 10,

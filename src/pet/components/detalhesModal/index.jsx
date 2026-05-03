@@ -56,6 +56,7 @@ function DetalhesModal({
                     <TextInput
                       value={campo.valor}
                       onChangeText={campo.onChangeText}
+                      onBlur={campo.onBlur}
                       style={[styles.input, campo.multiline && styles.textarea]}
                       multiline={campo.multiline}
                       keyboardType={campo.keyboardType}

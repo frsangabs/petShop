@@ -44,9 +44,11 @@ export const styles = StyleSheet.create({
   },
 
   status: {
+    flex: 1,
     fontSize: 12,
     color: "#4CAF50",
     fontWeight: "bold",
+    textAlign: "right",
   },
 
   statusAtivo: {

@@ -39,6 +39,9 @@ model PacoteBanhos {
   dataPrimeiroBanho String
   horario           String
   servico           String
+  bonusServico      String        @default("Tosa Higiênica")
+  bonusConcluido    Boolean       @default(false)
+  bonusConcluidoEm  String        @default("")
   criadoEm          DateTime      @default(now())
   pet               Pet           @relation(fields: [petId], references: [id], onDelete: Cascade)
   agendamentos      Agendamento[]
@@ -53,6 +56,7 @@ model Agendamento {
   data        String
   horario     String
   pago        Boolean       @default(false)
+  pagoEm      String        @default("")
   preco       String        @default("0,00")
   lamina      String        @default("-")
   observacoes String        @default("Sem observacoes.")
@@ -72,6 +76,7 @@ model Historico {
   data        String
   horario     String
   pago        Boolean @default(false)
+  pagoEm      String  @default("")
   preco       String  @default("0,00")
   lamina      String  @default("-")
   observacoes String  @default("Sem observacoes.")

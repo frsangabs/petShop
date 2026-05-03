@@ -22,6 +22,7 @@ export default function RootLayout() {
           <Stack.Screen name="donos" options={{ headerShown: false }} />
           <Stack.Screen name="agendamentos" options={{ headerShown: false }} />
           <Stack.Screen name="historico" options={{ headerShown: false }} />
+          <Stack.Screen name="dashboard" options={{ headerShown: false }} />
           <Stack.Screen name="criar-pet" options={{ headerShown: false }} />
           <Stack.Screen name="novo-agendamento" options={{ headerShown: false }} />
           <Stack.Screen name="detalhe-agendamento/[id]" options={{ headerShown: false }} />

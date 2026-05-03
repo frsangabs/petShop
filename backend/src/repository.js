@@ -112,14 +112,69 @@ export async function criarPacoteComAgendamentos(pacote, agendamentos) {
 export async function atualizarAgendamento(id, dados) {
   if (!usarPrisma) {
     const db = await carregarDb();
+    const agendamentoAtual = db.agendamentos.find((agendamento) => agendamento.id === id);
+
     db.agendamentos = db.agendamentos.map((agendamento) =>
       agendamento.id === id ? { ...agendamento, ...dados } : agendamento
+    );
+
+    if (agendamentoAtual?.pacoteId && dados.pago !== undefined) {
+      const dadosPagamento = { pago: dados.pago, pagoEm: dados.pagoEm ?? "" };
+
+      db.agendamentos = db.agendamentos.map((agendamento) =>
+        agendamento.pacoteId === agendamentoAtual.pacoteId
+          ? { ...agendamento, ...dadosPagamento }
+          : agendamento
+      );
+      db.historico = db.historico.map((registro) =>
+        registro.pacoteId === agendamentoAtual.pacoteId
+          ? { ...registro, ...dadosPagamento }
+          : registro
+      );
+    }
+
+    await salvarDb(db);
+    return carregarDados();
+  }
+
+  const agendamentoAtual = await prisma.agendamento.findUnique({ where: { id } });
+
+  if (!agendamentoAtual) {
+    return carregarDados();
+  }
+
+  const operacoes = [prisma.agendamento.update({ where: { id }, data: dados })];
+
+  if (agendamentoAtual.pacoteId && dados.pago !== undefined) {
+    const dadosPagamento = { pago: dados.pago, pagoEm: dados.pagoEm ?? "" };
+
+    operacoes.push(
+      prisma.agendamento.updateMany({
+        where: { pacoteId: agendamentoAtual.pacoteId },
+        data: dadosPagamento
+      }),
+      prisma.historico.updateMany({
+        where: { pacoteId: agendamentoAtual.pacoteId },
+        data: dadosPagamento
+      })
+    );
+  }
+
+  await prisma.$transaction(operacoes);
+  return carregarDados();
+}
+
+export async function atualizarPacote(id, dados) {
+  if (!usarPrisma) {
+    const db = await carregarDb();
+    db.pacotes = db.pacotes.map((pacote) =>
+      pacote.id === id ? { ...pacote, ...dados } : pacote
     );
     await salvarDb(db);
     return carregarDados();
   }
 
-  await prisma.agendamento.update({ where: { id }, data: dados });
+  await prisma.pacoteBanhos.update({ where: { id }, data: dados });
   return carregarDados();
 }
 
@@ -144,6 +199,10 @@ export async function concluirAgendamento(id, concluidoEm) {
       return null;
     }
 
+    if (!agendamento.pago) {
+      return { pagamentoPendente: true };
+    }
+
     db.historico.unshift({ ...agendamento, concluidoEm });
     db.agendamentos = db.agendamentos.filter((item) => item.id !== id);
     await salvarDb(db);
@@ -154,6 +213,10 @@ export async function concluirAgendamento(id, concluidoEm) {
 
   if (!agendamento) {
     return null;
+  }
+
+  if (!agendamento.pago) {
+    return { pagamentoPendente: true };
   }
 
   await prisma.$transaction([

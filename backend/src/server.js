@@ -1,9 +1,16 @@
 import http from "node:http";
 import { novoId } from "./db.js";
+import { gerarDashboard } from "./dashboard.js";
+import {
+  formatarDataHoraAtual,
+  formatarHorario,
+  formatarPreco
+} from "./formatadores.js";
 import {
   atualizarAgendamento,
   atualizarDono,
   atualizarHistorico,
+  atualizarPacote,
   atualizarPet,
   carregarDados,
   concluirAgendamento,
@@ -48,12 +55,30 @@ function adicionarDias(dataBR, dias) {
   return data.toLocaleDateString("pt-BR");
 }
 
-function encontrarDono(donos, nome, telefone) {
+function encontrarDonoPorTelefone(donos, telefone) {
   return donos.find(
-    (dono) =>
-      dono.nome.trim().toLowerCase() === String(nome).trim().toLowerCase() ||
-      dono.telefone.trim() === String(telefone).trim()
+    (dono) => dono.telefone.trim() === String(telefone).trim()
   );
+}
+
+function normalizarAtendimento(body) {
+  return {
+    ...body,
+    ...(body.horario !== undefined ? { horario: formatarHorario(body.horario) } : {}),
+    ...(body.preco !== undefined ? { preco: formatarPreco(body.preco) || "0,00" } : {}),
+    ...(body.pago === true && !body.pagoEm ? { pagoEm: formatarDataHoraAtual() } : {}),
+    ...(body.pago === false ? { pagoEm: "" } : {})
+  };
+}
+
+function normalizarPacote(body) {
+  return {
+    ...body,
+    ...(body.bonusConcluido === true && !body.bonusConcluidoEm
+      ? { bonusConcluidoEm: formatarDataHoraAtual() }
+      : {}),
+    ...(body.bonusConcluido === false ? { bonusConcluidoEm: "" } : {})
+  };
 }
 
 async function roteador(req, res) {
@@ -76,6 +101,18 @@ async function roteador(req, res) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/dashboard") {
+      enviarJson(
+        res,
+        200,
+        gerarDashboard(await carregarDados(), {
+          inicio: url.searchParams.get("inicio"),
+          fim: url.searchParams.get("fim")
+        })
+      );
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/pets") {
       const body = await lerBody(req);
       const dados = await carregarDados();
@@ -83,7 +120,7 @@ async function roteador(req, res) {
       let novoDono = null;
 
       if (!donoId) {
-        const donoExistente = encontrarDono(dados.donos, body.dono, body.telefone);
+        const donoExistente = encontrarDonoPorTelefone(dados.donos, body.telefone);
         donoId = donoExistente?.id ?? novoId("dono");
 
         if (!donoExistente) {
@@ -126,9 +163,10 @@ async function roteador(req, res) {
         petId: body.petId,
         servico: String(body.servico ?? "").trim(),
         data: String(body.data ?? "").trim(),
-        horario: String(body.horario ?? "").trim(),
+        horario: formatarHorario(body.horario),
         pago: Boolean(body.pago),
-        preco: String(body.preco ?? "").trim() || "0,00",
+        pagoEm: body.pago ? formatarDataHoraAtual() : "",
+        preco: formatarPreco(body.preco) || "0,00",
         lamina: String(body.lamina ?? "").trim() || "-",
         observacoes: String(body.observacoes ?? "").trim() || "Sem observacoes.",
         imagemUri: body.imagemUri ?? "",
@@ -152,8 +190,11 @@ async function roteador(req, res) {
         petId: body.petId,
         quantidadeBanhos: quantidade,
         dataPrimeiroBanho: String(body.data ?? "").trim(),
-        horario: String(body.horario ?? "").trim(),
-        servico: String(body.servico ?? "Banho").trim()
+        horario: formatarHorario(body.horario),
+        servico: "Banho",
+        bonusServico: String(body.bonusServico ?? "Tosa Higiênica").trim(),
+        bonusConcluido: false,
+        bonusConcluidoEm: ""
       };
       const agendamentos = Array.from({ length: quantidade }, (_, index) => ({
         id: novoId("ag"),
@@ -162,7 +203,8 @@ async function roteador(req, res) {
         data: adicionarDias(pacote.dataPrimeiroBanho, index * 7),
         horario: pacote.horario,
         pago: Boolean(body.pago),
-        preco: String(body.preco ?? "").trim() || "0,00",
+        pagoEm: body.pago ? formatarDataHoraAtual() : "",
+        preco: formatarPreco(body.preco) || "0,00",
         lamina: String(body.lamina ?? "").trim() || "-",
         observacoes:
           index === 0
@@ -183,7 +225,17 @@ async function roteador(req, res) {
 
     if (req.method === "PATCH" && partes[0] === "agendamentos" && partes[1]) {
       enviarJson(res, 200, {
-        dados: await atualizarAgendamento(partes[1], await lerBody(req))
+        dados: await atualizarAgendamento(
+          partes[1],
+          normalizarAtendimento(await lerBody(req))
+        )
+      });
+      return;
+    }
+
+    if (req.method === "PATCH" && partes[0] === "pacotes" && partes[1]) {
+      enviarJson(res, 200, {
+        dados: await atualizarPacote(partes[1], normalizarPacote(await lerBody(req)))
       });
       return;
     }
@@ -199,23 +251,31 @@ async function roteador(req, res) {
       partes[1] &&
       partes[2] === "concluir"
     ) {
-      const dados = await concluirAgendamento(
+      const resultado = await concluirAgendamento(
         partes[1],
         new Date().toLocaleDateString("pt-BR")
       );
 
-      if (!dados) {
+      if (!resultado) {
         enviarJson(res, 404, { error: "Agendamento nao encontrado" });
         return;
       }
 
-      enviarJson(res, 200, { dados });
+      if (resultado.pagamentoPendente) {
+        enviarJson(res, 409, { error: "Pagamento pendente" });
+        return;
+      }
+
+      enviarJson(res, 200, { dados: resultado });
       return;
     }
 
     if (req.method === "PATCH" && partes[0] === "historico" && partes[1]) {
       enviarJson(res, 200, {
-        dados: await atualizarHistorico(partes[1], await lerBody(req))
+        dados: await atualizarHistorico(
+          partes[1],
+          normalizarAtendimento(await lerBody(req))
+        )
       });
       return;
     }

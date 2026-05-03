@@ -29,7 +29,7 @@ export const styles = StyleSheet.create({
   },
 
   titulo: {
-    fontSize: 10,
+    fontSize: 9,
     color: "#333",
     textAlign: "center",
   },
