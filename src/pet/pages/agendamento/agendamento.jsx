@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import CardAgendamento from "../../components/cardAgendamento";
 import DetalhesModal from "../../components/detalhesModal";
@@ -8,7 +8,6 @@ import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
 import {
   dataHoraParaTempo,
-  formatarDataHoraAtual,
   formatarHorario,
   formatarPreco,
 } from "../../utils/formatadores";
@@ -20,6 +19,8 @@ function Agendamentos() {
   const router = useRouter();
   const {
     agendamentos,
+    pets,
+    donos,
     obterPet,
     alternarPagamento,
     cancelarAgendamento,
@@ -27,7 +28,7 @@ function Agendamentos() {
     atualizarAgendamento,
     obterDono,
   } = usePetShop();
-  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState(null);
+  const [idSelecionado, setIdSelecionado] = useState(null);
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState({
     servico: "",
@@ -40,46 +41,44 @@ function Agendamentos() {
   });
   const [busca, setBusca] = useState("");
 
-  function contemBusca(...valores) {
+  const agendamentoSelecionado = useMemo(
+    () => agendamentos.find((ag) => ag.id === idSelecionado) ?? null,
+    [agendamentos, idSelecionado]
+  );
+
+  const agendamentosFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) {
-      return true;
-    }
-    return valores.some((valor) => String(valor ?? "").toLowerCase().includes(termo));
-  }
+    return agendamentos
+      .filter((agendamento) => {
+        if (!termo) return true;
+        const pet = pets.find((p) => p.id === agendamento.petId);
+        const dono = pet ? donos.find((d) => d.id === pet.donoId) : null;
+        return [
+          pet?.nome, pet?.raca, dono?.nome, dono?.telefone,
+          agendamento.servico, agendamento.data, agendamento.horario,
+        ].some((valor) => String(valor ?? "").toLowerCase().includes(termo));
+      })
+      .sort((a, b) => dataHoraParaTempo(a) - dataHoraParaTempo(b));
+  }, [agendamentos, busca, pets, donos]);
 
-  function dataHoraParaOrdenacao(agendamento) {
-    return dataHoraParaTempo(agendamento);
-  }
+  const listaAgrupada = useMemo(
+    () =>
+      agendamentosFiltrados.flatMap((agendamento, index) => {
+        const anterior = agendamentosFiltrados[index - 1];
+        const itens = [];
 
-  const agendamentosFiltrados = agendamentos.filter((agendamento) => {
-    const pet = obterPet(agendamento.petId);
-    const dono = pet ? obterDono(pet.donoId) : null;
-    return contemBusca(
-      pet?.nome,
-      pet?.raca,
-      dono?.nome,
-      dono?.telefone,
-      agendamento.servico,
-      agendamento.data,
-      agendamento.horario
-    );
-  }).sort((a, b) => dataHoraParaOrdenacao(a) - dataHoraParaOrdenacao(b));
+        if (!anterior || anterior.data !== agendamento.data) {
+          itens.push({ tipo: "dia", id: `dia-${agendamento.data}`, data: agendamento.data });
+        }
 
-  const listaAgrupada = agendamentosFiltrados.flatMap((agendamento, index) => {
-    const anterior = agendamentosFiltrados[index - 1];
-    const itens = [];
-
-    if (!anterior || anterior.data !== agendamento.data) {
-      itens.push({ tipo: "dia", id: `dia-${agendamento.data}`, data: agendamento.data });
-    }
-
-    itens.push({ tipo: "agendamento", ...agendamento });
-    return itens;
-  });
+        itens.push({ tipo: "agendamento", ...agendamento });
+        return itens;
+      }),
+    [agendamentosFiltrados]
+  );
 
   function abrirAgendamento(agendamento) {
-    setAgendamentoSelecionado(agendamento);
+    setIdSelecionado(agendamento.id);
     setEditando(false);
     setForm({
       servico: agendamento.servico,
@@ -101,9 +100,22 @@ function Agendamentos() {
   }
 
   function cancelar(id) {
-    cancelarAgendamento(id);
-    setAgendamentoSelecionado(null);
-    setEditando(false);
+    Alert.alert(
+      "Cancelar agendamento",
+      "Tem certeza que deseja cancelar este agendamento?",
+      [
+        { text: "Não", style: "cancel" },
+        {
+          text: "Sim, cancelar",
+          style: "destructive",
+          onPress: () => {
+            cancelarAgendamento(id);
+            setIdSelecionado(null);
+            setEditando(false);
+          },
+        },
+      ]
+    );
   }
 
   function concluir(id) {
@@ -117,14 +129,25 @@ function Agendamentos() {
       return;
     }
 
-    concluirAgendamento(id);
-    setAgendamentoSelecionado(null);
-    setEditando(false);
-    router.push("/historico");
+    Alert.alert(
+      "Concluir atendimento",
+      "Deseja marcar este atendimento como concluído?",
+      [
+        { text: "Não", style: "cancel" },
+        {
+          text: "Sim, concluir",
+          onPress: () => {
+            concluirAgendamento(id);
+            setIdSelecionado(null);
+            setEditando(false);
+          },
+        },
+      ]
+    );
   }
 
   function fecharModal() {
-    setAgendamentoSelecionado(null);
+    setIdSelecionado(null);
     setEditando(false);
   }
 
@@ -144,19 +167,9 @@ function Agendamentos() {
     };
 
     atualizarAgendamento(agendamentoSelecionado.id, dados);
-    setAgendamentoSelecionado((atual) => (atual ? { ...atual, ...dados } : atual));
     setEditando(false);
   }
 
-  function alternarPagamentoSelecionado(id) {
-    const pago = !agendamentoSelecionado?.pago;
-    const pagoEm = pago ? formatarDataHoraAtual() : "";
-
-    alternarPagamento(id);
-    setAgendamentoSelecionado((atual) =>
-      atual?.id === id ? { ...atual, pago, pagoEm } : atual
-    );
-  }
   const petSelecionado = agendamentoSelecionado
     ? obterPet(agendamentoSelecionado.petId)
     : null;
@@ -201,7 +214,7 @@ function Agendamentos() {
               data={`${item.data} - ${item.horario}`}
               pago={item.pago}
               porte={pet?.porte ?? "Pequeno"}
-              imagemUri={item.imagemUri}
+
               onPress={() => abrirAgendamento(item)}
               onTogglePago={() => alternarPagamento(item.id)}
               onConcluir={() => concluir(item.id)}
@@ -333,7 +346,7 @@ function Agendamentos() {
             <>
               <TouchableOpacity
                 style={styles.botaoSecundario}
-                onPress={() => alternarPagamentoSelecionado(agendamentoSelecionado.id)}
+                onPress={() => alternarPagamento(agendamentoSelecionado.id)}
               >
                 <Text style={styles.textoSecundario}>
                   {agendamentoSelecionado.pago ? "Marcar pendente" : "Marcar pago"}
