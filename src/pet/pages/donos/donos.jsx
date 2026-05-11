@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, Text } from "react-native";
+import AppScreen from "../../components/appScreen";
 import CardDono from "../../components/cardDonos";
 import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
@@ -8,7 +9,7 @@ import { usePetShop } from "../../context/PetShopContext";
 import { styles } from "./styles";
 
 function Donos() {
-  const { donos, pets, atualizarDono } = usePetShop();
+  const { donos, pets, atualizarDono, carregandoDados } = usePetShop();
   const [donoSelecionado, setDonoSelecionado] = useState(null);
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState({ nome: "", telefone: "", busca: "" });
@@ -62,7 +63,7 @@ function Donos() {
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen style={styles.container}>
       <Menu />
 
       <FlatList
@@ -75,7 +76,11 @@ function Donos() {
             placeholder="Buscar por dono, telefone ou pet"
           />
         }
-        ListEmptyComponent={<Text style={styles.vazio}>Nenhum dono cadastrado.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.vazio}>
+            {carregandoDados ? "Carregando donos..." : "Nenhum dono cadastrado."}
+          </Text>
+        }
         renderItem={({ item }) => (
           <CardDono
             nome={item.nome}
@@ -130,7 +135,7 @@ function Donos() {
           },
         ]}
       />
-    </View>
+    </AppScreen>
   );
 }
 

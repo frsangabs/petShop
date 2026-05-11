@@ -18,6 +18,8 @@ function CardAgendamento({
       style={[styles.card, pago && styles.cardPago]}
       onPress={onPress}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${nomePet}, ${servico}, ${data}, pagamento ${pago ? "pago" : "pendente"}`}
     >
       <View style={styles.linhaTopo}>
         <Text style={styles.nome}>{nomePet}</Text>
@@ -42,6 +44,8 @@ function CardAgendamento({
             event.stopPropagation?.();
             onTogglePago?.();
           }}
+          accessibilityRole="button"
+          accessibilityLabel={pago ? "Marcar pagamento como pendente" : "Marcar pagamento como pago"}
         >
           <Text style={styles.textoSecundario}>{pago ? "Marcar pendente" : "Marcar pago"}</Text>
         </TouchableOpacity>
@@ -52,6 +56,8 @@ function CardAgendamento({
             event.stopPropagation?.();
             onConcluir?.();
           }}
+          accessibilityRole="button"
+          accessibilityLabel={`Concluir atendimento de ${nomePet}`}
         >
           <Text style={styles.textoAcao}>Concluir</Text>
         </TouchableOpacity>
@@ -62,6 +68,8 @@ function CardAgendamento({
             event.stopPropagation?.();
             onCancelar?.();
           }}
+          accessibilityRole="button"
+          accessibilityLabel={`Cancelar agendamento de ${nomePet}`}
         >
           <Text style={styles.textoAcao}>Cancelar</Text>
         </TouchableOpacity>

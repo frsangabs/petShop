@@ -1,40 +1,47 @@
 import { PrismaClient } from "@prisma/client";
-import { dadosIniciais } from "../src/db.js";
+import { dadosIniciais, salvarDb } from "../src/db.js";
 
-const prisma = new PrismaClient();
+function normalizarPacote(pacote) {
+  return {
+    ...pacote,
+    criadoEm: pacote.criadoEm ? new Date(pacote.criadoEm) : undefined
+  };
+}
 
 async function main() {
-  for (const dono of dadosIniciais.donos) {
-    await prisma.dono.upsert({
-      where: { id: dono.id },
-      create: dono,
-      update: dono
-    });
+  if (!process.env.DATABASE_URL) {
+    await salvarDb(dadosIniciais);
+    console.log("Banco JSON local resetado e populado com dados realistas.");
+    return;
   }
 
-  for (const pet of dadosIniciais.pets) {
-    await prisma.pet.upsert({
-      where: { id: pet.id },
-      create: pet,
-      update: pet
-    });
-  }
+  const prisma = new PrismaClient();
 
-  for (const agendamento of dadosIniciais.agendamentos) {
-    await prisma.agendamento.upsert({
-      where: { id: agendamento.id },
-      create: agendamento,
-      update: agendamento
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.historico.deleteMany();
+      await tx.agendamento.deleteMany();
+      await tx.pacoteBanhos.deleteMany();
+      await tx.pet.deleteMany();
+      await tx.dono.deleteMany();
+
+      await tx.dono.createMany({ data: dadosIniciais.donos });
+      await tx.pet.createMany({ data: dadosIniciais.pets });
+      await tx.pacoteBanhos.createMany({
+        data: dadosIniciais.pacotes.map(normalizarPacote)
+      });
+      await tx.agendamento.createMany({ data: dadosIniciais.agendamentos });
+      await tx.historico.createMany({ data: dadosIniciais.historico });
     });
+
+    console.log("Banco PostgreSQL resetado e populado com dados realistas.");
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
   .catch(async (error) => {
     console.error(error);
-    await prisma.$disconnect();
     process.exit(1);
   });

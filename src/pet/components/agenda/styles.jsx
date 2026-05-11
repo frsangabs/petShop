@@ -31,10 +31,28 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 10,
   },
 
-  icone: {
-    fontSize: 20,
+  etiqueta: {
+    minWidth: 64,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    fontSize: 11,
+    fontWeight: "800",
+    textAlign: "center",
+    overflow: "hidden",
+  },
+
+  etiquetaLivre: {
+    backgroundColor: "#e8f5e9",
+    color: "#2e7d32",
+  },
+
+  etiquetaOcupado: {
+    backgroundColor: "#eef4ff",
+    color: "#2f80ed",
   },
 
   horario: {

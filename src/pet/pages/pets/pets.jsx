@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import AppScreen from "../../components/appScreen";
 import CardPet from "../../components/cardPets";
 import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
@@ -19,6 +20,7 @@ function Pets() {
     obterDono,
     atualizarPet,
     atualizarDono,
+    carregandoDados,
   } = usePetShop();
   const [petSelecionado, setPetSelecionado] = useState(null);
   const [editando, setEditando] = useState(false);
@@ -135,7 +137,7 @@ function Pets() {
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen style={styles.container}>
       <Menu />
 
       <FlatList
@@ -156,7 +158,11 @@ function Pets() {
             />
           </>
         }
-        ListEmptyComponent={<Text style={styles.vazio}>Nenhum pet cadastrado.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.vazio}>
+            {carregandoDados ? "Carregando pets..." : "Nenhum pet cadastrado."}
+          </Text>
+        }
         renderItem={({ item }) => (
           <CardPet
             nome={item.nome}
@@ -309,7 +315,7 @@ function Pets() {
           </View>
         }
       />
-    </View>
+    </AppScreen>
   );
 }
 

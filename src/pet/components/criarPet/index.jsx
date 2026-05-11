@@ -19,6 +19,8 @@ function CardCriarPet({
   usarDonoExistente,
   setUsarDonoExistente,
   foto,
+  erros = {},
+  salvando = false,
   onEscolherFoto,
   onRemoverFoto,
   onSalvar,
@@ -33,7 +35,9 @@ function CardCriarPet({
         onChangeText={setNome}
         style={styles.input}
         placeholderTextColor="#999"
+        accessibilityLabel="Nome do pet"
       />
+      {erros.nome ? <Text style={styles.erroCampo}>{erros.nome}</Text> : null}
 
       <TextInput
         placeholder="Raca"
@@ -41,7 +45,9 @@ function CardCriarPet({
         onChangeText={setRaca}
         style={styles.input}
         placeholderTextColor="#999"
+        accessibilityLabel="Raça do pet"
       />
+      {erros.raca ? <Text style={styles.erroCampo}>{erros.raca}</Text> : null}
 
       <View style={styles.campo}>
         <Text style={styles.label}>Porte</Text>
@@ -50,18 +56,23 @@ function CardCriarPet({
           <Picker
             selectedValue={porte}
             onValueChange={(itemValue) => setPorte(itemValue)}
+            style={styles.picker}
+            dropdownIconColor="#333"
           >
             <Picker.Item label="Selecione o porte" value="" color="#999" />
-            <Picker.Item label="Pequeno" value="Pequeno" color="#999" />
-            <Picker.Item label="Medio" value="Medio" color="#999" />
-            <Picker.Item label="Grande" value="Grande" color="#999" />
+            <Picker.Item label="Pequeno" value="Pequeno" color="#333" />
+            <Picker.Item label="Medio" value="Medio" color="#333" />
+            <Picker.Item label="Grande" value="Grande" color="#333" />
           </Picker>
         </View>
+        {erros.porte ? <Text style={styles.erroCampo}>{erros.porte}</Text> : null}
       </View>
 
       <TouchableOpacity
         style={[styles.toggle, usarDonoExistente && styles.toggleAtivo]}
         onPress={() => setUsarDonoExistente((atual) => !atual)}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: usarDonoExistente }}
       >
         <Text style={[styles.toggleTexto, usarDonoExistente && styles.toggleTextoAtivo]}>
           {usarDonoExistente ? "Selecionar dono existente" : "Cadastrar novo dono"}
@@ -72,17 +83,24 @@ function CardCriarPet({
         <View style={styles.campo}>
           <Text style={styles.label}>Dono existente</Text>
           <View style={styles.pickerContainer}>
-            <Picker selectedValue={donoId} onValueChange={(value) => setDonoId(value)}>
+            <Picker
+              selectedValue={donoId}
+              onValueChange={(value) => setDonoId(value)}
+              style={styles.picker}
+              dropdownIconColor="#333"
+            >
               <Picker.Item label="Selecione um dono" value="" color="#999" />
               {donos.map((item) => (
                 <Picker.Item
                   key={item.id}
                   label={`${item.nome} - ${item.telefone}`}
                   value={item.id}
+                  color="#333"
                 />
               ))}
             </Picker>
           </View>
+          {erros.donoId ? <Text style={styles.erroCampo}>{erros.donoId}</Text> : null}
         </View>
       ) : (
         <>
@@ -92,7 +110,9 @@ function CardCriarPet({
             onChangeText={setDono}
             style={styles.input}
             placeholderTextColor="#999"
+            accessibilityLabel="Nome do dono"
           />
+          {erros.dono ? <Text style={styles.erroCampo}>{erros.dono}</Text> : null}
 
           <TextInput
             placeholder="Telefone"
@@ -101,7 +121,11 @@ function CardCriarPet({
             style={styles.input}
             keyboardType="phone-pad"
             placeholderTextColor="#999"
+            accessibilityLabel="Telefone do dono"
           />
+          {erros.telefone ? (
+            <Text style={styles.erroCampo}>{erros.telefone}</Text>
+          ) : null}
         </>
       )}
 
@@ -130,8 +154,14 @@ function CardCriarPet({
         </View>
       </View>
 
-      <TouchableOpacity style={styles.botao} onPress={onSalvar}>
-        <Text style={styles.textoBotao}>Salvar Pet</Text>
+      <TouchableOpacity
+        style={[styles.botao, salvando && styles.botaoDesabilitado]}
+        onPress={onSalvar}
+        disabled={salvando}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: salvando }}
+      >
+        <Text style={styles.textoBotao}>{salvando ? "Salvando..." : "Salvar Pet"}</Text>
       </TouchableOpacity>
     </View>
   );

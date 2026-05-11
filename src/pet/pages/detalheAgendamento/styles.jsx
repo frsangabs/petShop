@@ -5,7 +5,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f4f7f5",
     paddingTop: 20,
-    paddingBottom: 100,
+    paddingBottom: 130,
   },
 
   card: {

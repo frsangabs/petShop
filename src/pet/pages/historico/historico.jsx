@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import AppScreen from "../../components/appScreen";
 import CardHistorico from "../../components/cardHistorico";
 import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
@@ -8,6 +9,7 @@ import { usePetShop } from "../../context/PetShopContext";
 import {
   dataHoraParaTempo,
   dataHoraTextoParaTempo,
+  formatarDataDigitada,
   formatarHorario,
   formatarPreco,
 } from "../../utils/formatadores";
@@ -16,7 +18,7 @@ import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
 
 function Historico() {
-  const { historico, obterPet, obterDono, atualizarHistorico } = usePetShop();
+  const { historico, obterPet, obterDono, atualizarHistorico, carregandoDados } = usePetShop();
   const [registroSelecionado, setRegistroSelecionado] = useState(null);
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState({
@@ -117,7 +119,7 @@ function Historico() {
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen style={styles.container}>
       <Menu />
 
       <FlatList
@@ -131,7 +133,11 @@ function Historico() {
           />
         }
         ListEmptyComponent={
-          <Text style={styles.vazio}>Nenhum atendimento concluido ainda.</Text>
+          <Text style={styles.vazio}>
+            {carregandoDados
+              ? "Carregando histórico..."
+              : "Nenhum atendimento concluído ainda."}
+          </Text>
         }
         renderItem={({ item }) => {
           const pet = obterPet(item.petId);
@@ -189,7 +195,12 @@ function Historico() {
           {
             label: "Data agendada",
             valor: form.data,
-            onChangeText: (valor) => setForm((atual) => ({ ...atual, data: valor })),
+            onChangeText: (valor) =>
+              setForm((atual) => ({
+                ...atual,
+                data: formatarDataDigitada(valor),
+              })),
+            keyboardType: "number-pad",
           },
           {
             label: "Horario",
@@ -206,7 +217,11 @@ function Historico() {
             label: "Concluido em",
             valor: form.concluidoEm,
             onChangeText: (valor) =>
-              setForm((atual) => ({ ...atual, concluidoEm: valor })),
+              setForm((atual) => ({
+                ...atual,
+                concluidoEm: formatarDataDigitada(valor),
+              })),
+            keyboardType: "number-pad",
           },
           {
             label: "Preco",
@@ -270,7 +285,7 @@ function Historico() {
           </View>
         }
       />
-    </View>
+    </AppScreen>
   );
 }
 

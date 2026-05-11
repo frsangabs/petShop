@@ -61,6 +61,9 @@ function Agenda({
               <TouchableOpacity
                 style={[styles.dia, ativo && styles.diaAtivo]}
                 onPress={() => setDataSelecionada(item.dataCompleta)}
+                accessibilityRole="button"
+                accessibilityLabel={`Selecionar ${item.semana}, dia ${item.dia}`}
+                accessibilityState={{ selected: ativo }}
               >
                 <Text style={[styles.semana, ativo && styles.textoAtivo]}>
                   {item.semana}
@@ -106,9 +109,18 @@ function Agenda({
 
               onSelecionarHorario?.({ data: dataAtual, horario: item });
             }}
+            accessibilityRole="button"
+            accessibilityLabel={
+              ocupado
+                ? `Horário ${item} ocupado por ${nomesPets.join(", ") || "agendamento"}`
+                : `Agendar horário ${item}`
+            }
+            accessibilityState={{ selected: ativo }}
           >
             <View style={styles.linha}>
-              <Text style={styles.icone}>{ocupado ? "!" : "+"}</Text>
+              <Text style={[styles.etiqueta, ocupado ? styles.etiquetaOcupado : styles.etiquetaLivre]}>
+                {ocupado ? "Ocupado" : "Livre"}
+              </Text>
 
               <Text style={[styles.horario, ativo && styles.textoAtivo]}>{item}</Text>
 

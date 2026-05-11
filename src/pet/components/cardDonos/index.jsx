@@ -7,6 +7,8 @@ function CardDono({ nome, telefone, pets, busca, onPress }) {
       style={[styles.card, busca && styles.cardBusca]}
       onPress={onPress}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${nome}, telefone ${telefone}, ${busca ? "demora a buscar" : "busca rápido"}`}
     >
       <View style={styles.info}>
         <Text style={styles.nome}>{nome}</Text>

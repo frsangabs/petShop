@@ -27,6 +27,16 @@ export const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
     fontSize: 14,
+    minHeight: 48,
+  },
+
+  erroCampo: {
+    color: "#F44336",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: -6,
+    marginBottom: 10,
+    marginLeft: 4,
   },
 
   botao: {
@@ -35,6 +45,10 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     marginTop: 10,
+  },
+
+  botaoDesabilitado: {
+    opacity: 0.65,
   },
 
   textoBotao: {
@@ -58,6 +72,11 @@ export const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
     borderRadius: 10,
     marginBottom: 10,
+  },
+
+  picker: {
+    color: "#333",
+    minHeight: 48,
   },
 
   toggle: {

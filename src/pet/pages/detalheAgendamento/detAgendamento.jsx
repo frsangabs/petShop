@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
+import AppScreen from "../../components/appScreen";
 import DetalhesAgendamento from "../../components/detalheAgendamento";
 import Menu from "../../components/navbar";
 import { usePetShop } from "../../context/PetShopContext";
@@ -20,7 +21,7 @@ function DetalhesPage() {
 
   if (!agendamento || !pet) {
     return (
-      <View style={styles.container}>
+      <AppScreen style={styles.container}>
         <Menu />
         <View style={styles.card}>
           <Text style={styles.titulo}>Agendamento nao encontrado</Text>
@@ -28,7 +29,7 @@ function DetalhesPage() {
             <Text style={styles.textoBotao}>Voltar</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </AppScreen>
     );
   }
 
@@ -41,17 +42,42 @@ function DetalhesPage() {
       return;
     }
 
-    concluirAgendamento(agendamento.id);
-    router.replace("/historico");
+    Alert.alert(
+      "Concluir atendimento",
+      "Deseja marcar este atendimento como concluído e mover para o histórico?",
+      [
+        { text: "Não", style: "cancel" },
+        {
+          text: "Sim, concluir",
+          onPress: () => {
+            concluirAgendamento(agendamento.id);
+            router.replace("/historico");
+          },
+        },
+      ]
+    );
   }
 
   function cancelar() {
-    cancelarAgendamento(agendamento.id);
-    router.replace("/agendamentos");
+    Alert.alert(
+      "Cancelar agendamento",
+      "Tem certeza que deseja cancelar este agendamento?",
+      [
+        { text: "Não", style: "cancel" },
+        {
+          text: "Sim, cancelar",
+          style: "destructive",
+          onPress: () => {
+            cancelarAgendamento(agendamento.id);
+            router.replace("/agendamentos");
+          },
+        },
+      ]
+    );
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen style={styles.container}>
       <Menu />
       <DetalhesAgendamento
         nomePet={pet.nome}
@@ -83,7 +109,7 @@ function DetalhesPage() {
           <Text style={styles.textoBotao}>Cancelar</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </AppScreen>
   );
 }
 

@@ -38,6 +38,20 @@ export function formatarPreco(valor) {
   return numero.toFixed(2).replace(".", ",");
 }
 
+export function formatarDataDigitada(valor) {
+  const digitos = String(valor ?? "").replace(/\D/g, "").slice(0, 8);
+
+  if (digitos.length <= 2) {
+    return digitos;
+  }
+
+  if (digitos.length <= 4) {
+    return `${digitos.slice(0, 2)}/${digitos.slice(2)}`;
+  }
+
+  return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
+}
+
 export function dataHoraParaTempo({ data, horario }) {
   const [dia, mes, ano] = String(data).split("/").map(Number);
   const [hora = 0, minuto = 0] = String(formatarHorario(horario)).split(":").map(Number);

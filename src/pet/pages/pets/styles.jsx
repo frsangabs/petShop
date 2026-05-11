@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
 
   lista: {
     padding: 15,
-    paddingBottom: 100,
+    paddingBottom: 130,
   },
 
   botaoPrimario: {

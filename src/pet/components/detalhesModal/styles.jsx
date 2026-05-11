@@ -87,6 +87,11 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
   },
 
+  picker: {
+    color: "#333",
+    minHeight: 48,
+  },
+
   textarea: {
     minHeight: 90,
     textAlignVertical: "top",

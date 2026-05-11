@@ -7,9 +7,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AppScreen from "../../components/appScreen";
 import Menu from "../../components/navbar";
 import { usePetShop } from "../../context/PetShopContext";
-import { dataHoraParaTempo, formatarDataHoraAtual } from "../../utils/formatadores";
+import {
+  dataHoraParaTempo,
+  formatarDataDigitada,
+  formatarDataHoraAtual,
+} from "../../utils/formatadores";
 import { styles } from "./styles";
 
 const tabs = ["Geral", "Pets", "Donos", "Pacotes abertos"];
@@ -311,7 +316,7 @@ function Dashboard() {
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen style={styles.container}>
       <Menu />
 
       <ScrollView contentContainerStyle={styles.conteudo}>
@@ -320,17 +325,19 @@ function Dashboard() {
         <View style={styles.filtros}>
           <TextInput
             value={inicio}
-            onChangeText={setInicio}
+            onChangeText={(valor) => setInicio(formatarDataDigitada(valor))}
             placeholder="Data inicial"
             placeholderTextColor="#999"
             style={styles.input}
+            keyboardType="number-pad"
           />
           <TextInput
             value={fim}
-            onChangeText={setFim}
+            onChangeText={(valor) => setFim(formatarDataDigitada(valor))}
             placeholder="Data final"
             placeholderTextColor="#999"
             style={styles.input}
+            keyboardType="number-pad"
           />
         </View>
 
@@ -442,7 +449,7 @@ function Dashboard() {
                     </View>
                   </View>
                   <Text style={styles.petTotal}>
-                    {item.proximoBanho ? `${item.proximoBanho}/${item.quantidade}` : "OK"}
+                    {item.banhosConcluidos}/{item.quantidade}
                   </Text>
                 </TouchableOpacity>
               ))
@@ -557,7 +564,7 @@ function Dashboard() {
           </View>
         ))}
       </DetalheModal>
-    </View>
+    </AppScreen>
   );
 }
 

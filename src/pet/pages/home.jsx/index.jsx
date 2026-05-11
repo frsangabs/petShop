@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
-import { View } from "react-native";
 import Agenda from "../../components/agenda";
+import AppScreen from "../../components/appScreen";
 import Menu from "../../components/navbar";
 import { usePetShop } from "../../context/PetShopContext";
 import { gerarHorarios } from "../../utils/gerarHorarios";
@@ -19,7 +19,7 @@ function Home() {
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen style={styles.container}>
       <Menu />
       <Agenda
         horarios={horarios}
@@ -29,7 +29,7 @@ function Home() {
         onAbrirAgendamento={(id) => router.push(`/detalhe-agendamento/${id}`)}
         onAbrirHorarioOcupado={() => router.push("/agendamentos")}
       />
-    </View>
+    </AppScreen>
   );
 }
 

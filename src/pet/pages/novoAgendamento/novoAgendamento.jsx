@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   Alert,
   Image,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -11,9 +12,14 @@ import {
   View,
 } from "react-native";
 
+import AppScreen from "../../components/appScreen";
 import Menu from "../../components/navbar";
 import { usePetShop } from "../../context/PetShopContext";
-import { formatarHorario, formatarPreco } from "../../utils/formatadores";
+import {
+  formatarDataDigitada,
+  formatarHorario,
+  formatarPreco,
+} from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
 import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
@@ -44,6 +50,8 @@ function NovoAgendamento() {
   const [imagemUri, setImagemUri] = useState("");
   const [pacote, setPacote] = useState(false);
   const [quantidadeBanhos, setQuantidadeBanhos] = useState(4);
+  const [erros, setErros] = useState({});
+  const [salvando, setSalvando] = useState(false);
   const sugestoesPets = useMemo(() => {
     const termo = petBusca.trim().toLowerCase();
 
@@ -63,6 +71,89 @@ function NovoAgendamento() {
   }, [obterDono, petBusca, petId, pets]);
   const [bonusServico, setBonusServico] = useState("Tosa Higiênica");
 
+  function limparErro(campo) {
+    setErros((atuais) => {
+      if (!atuais[campo]) {
+        return atuais;
+      }
+
+      const novos = { ...atuais };
+      delete novos[campo];
+      return novos;
+    });
+  }
+
+  function dataValida(valor) {
+    const partes = String(valor ?? "").split("/");
+
+    if (partes.length !== 3) {
+      return false;
+    }
+
+    const [dia, mes, ano] = partes.map(Number);
+    const dataTeste = new Date(ano, mes - 1, dia);
+
+    return (
+      dataTeste.getFullYear() === ano &&
+      dataTeste.getMonth() === mes - 1 &&
+      dataTeste.getDate() === dia
+    );
+  }
+
+  function horarioValido(valor) {
+    const texto = String(valor ?? "").trim().replace("h", ":").replace(".", ":");
+    const [horaRaw, minutoRaw = "00"] = texto.split(":");
+
+    if (!/^\d{1,2}$/.test(horaRaw) || !/^\d{1,2}$/.test(minutoRaw)) {
+      return false;
+    }
+
+    const hora = Number(horaRaw);
+    const minuto = Number(minutoRaw);
+    return hora >= 0 && hora <= 23 && minuto >= 0 && minuto <= 59;
+  }
+
+  function telefoneValido(valor) {
+    const digitos = String(valor ?? "").replace(/\D/g, "");
+    return digitos.length >= 10;
+  }
+
+  function validarFormulario() {
+    const novosErros = {};
+
+    if (!servico.trim()) {
+      novosErros.servico = "Selecione um serviço.";
+    }
+
+    if (!data.trim()) {
+      novosErros.data = "Informe a data.";
+    } else if (!dataValida(data)) {
+      novosErros.data = "Use uma data válida no formato dd/mm/aaaa.";
+    }
+
+    if (!horario.trim()) {
+      novosErros.horario = "Informe o horário.";
+    } else if (!horarioValido(horario)) {
+      novosErros.horario = "Use um horário válido, como 09:30.";
+    }
+
+    if (!petId && !petBusca.trim()) {
+      novosErros.pet = "Selecione ou informe o nome do pet.";
+    }
+
+    if (!petId && petBusca.trim()) {
+      if (!novoDono.trim()) {
+        novosErros.dono = "Informe o nome do dono.";
+      }
+
+      if (!telefoneValido(novoTelefone)) {
+        novosErros.telefone = "Informe um telefone com DDD.";
+      }
+    }
+
+    return novosErros;
+  }
+
   async function escolherImagem() {
     const uri = await selecionarImagemLeve();
 
@@ -74,6 +165,7 @@ function NovoAgendamento() {
   function alterarBuscaPet(valor) {
     setPetBusca(valor);
     setPetId("");
+    limparErro("pet");
   }
 
   function selecionarPet(pet) {
@@ -85,6 +177,9 @@ function NovoAgendamento() {
     );
     setNovoDono("");
     setNovoTelefone("");
+    limparErro("pet");
+    limparErro("dono");
+    limparErro("telefone");
   }
 
   async function obterOuCriarPetId() {
@@ -112,21 +207,22 @@ function NovoAgendamento() {
   }
 
   async function salvar() {
-    if (!servico.trim() || !data.trim() || !horario.trim()) {
-      Alert.alert(
-        "Campos obrigatorios",
-        "Preencha servico, data e horario."
-      );
+    const errosValidacao = validarFormulario();
+    setErros(errosValidacao);
+
+    if (Object.keys(errosValidacao).length) {
       return;
     }
+
+    setSalvando(true);
 
     const petSelecionadoId = await obterOuCriarPetId();
 
     if (!petSelecionadoId) {
-      Alert.alert(
-        "Dados do pet",
-        "Selecione um pet existente ou preencha nome do pet, dono e telefone."
-      );
+      setErros({
+        pet: "Selecione um pet existente ou preencha os dados para cadastrar um novo pet.",
+      });
+      setSalvando(false);
       return;
     }
 
@@ -143,26 +239,31 @@ function NovoAgendamento() {
       bonusServico,
     };
 
-    if (pacote) {
-      criarPacoteBanhos({ ...dados, quantidadeBanhos });
-    } else {
-      criarAgendamento(dados);
-    }
+    const resultado = pacote
+      ? await criarPacoteBanhos({ ...dados, quantidadeBanhos })
+      : await criarAgendamento(dados);
 
     Alert.alert(
       "Agendamento salvo",
-      pacote
-        ? "O pacote foi criado e os banhos semanais foram agendados."
-        : "O agendamento foi criado com sucesso."
+      resultado?.offline
+        ? "O atendimento ficou salvo neste aparelho. Quando a conexão voltar, confira se ele aparece nos outros aparelhos."
+        : pacote
+          ? "O pacote foi criado e os banhos semanais foram agendados."
+          : "O agendamento foi criado com sucesso."
     );
+    setSalvando(false);
     router.replace("/agendamentos");
   }
 
   return (
-    <View style={styles.tela}>
+    <AppScreen style={styles.tela} avoidKeyboard>
       <Menu />
 
-      <ScrollView contentContainerStyle={styles.conteudo}>
+      <ScrollView
+        contentContainerStyle={styles.conteudo}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.card}>
           <Text style={styles.titulo}>Novo agendamento</Text>
 
@@ -173,7 +274,10 @@ function NovoAgendamento() {
             onChangeText={alterarBuscaPet}
             style={styles.input}
             placeholderTextColor="#999"
+            accessibilityLabel="Buscar ou cadastrar pet"
+            returnKeyType="next"
           />
+          {erros.pet ? <Text style={styles.erroCampo}>{erros.pet}</Text> : null}
 
           {sugestoesPets.length ? (
             <View style={styles.sugestoes}>
@@ -205,18 +309,30 @@ function NovoAgendamento() {
               <TextInput
                 placeholder="Nome do dono"
                 value={novoDono}
-                onChangeText={setNovoDono}
+                onChangeText={(valor) => {
+                  setNovoDono(valor);
+                  limparErro("dono");
+                }}
                 style={styles.input}
                 placeholderTextColor="#999"
+                accessibilityLabel="Nome do dono"
               />
+              {erros.dono ? <Text style={styles.erroCampo}>{erros.dono}</Text> : null}
               <TextInput
                 placeholder="Telefone do dono"
                 value={novoTelefone}
-                onChangeText={setNovoTelefone}
+                onChangeText={(valor) => {
+                  setNovoTelefone(valor);
+                  limparErro("telefone");
+                }}
                 keyboardType="phone-pad"
                 style={styles.input}
                 placeholderTextColor="#999"
+                accessibilityLabel="Telefone do dono"
               />
+              {erros.telefone ? (
+                <Text style={styles.erroCampo}>{erros.telefone}</Text>
+              ) : null}
               <TextInput
                 placeholder="Raca do pet (opcional)"
                 value={novaRaca}
@@ -226,10 +342,15 @@ function NovoAgendamento() {
               />
               <Text style={styles.label}>Porte do pet</Text>
               <View style={styles.pickerContainer}>
-                <Picker selectedValue={novoPorte} onValueChange={setNovoPorte}>
-                  <Picker.Item label="Pequeno" value="Pequeno" />
-                  <Picker.Item label="Medio" value="Medio" />
-                  <Picker.Item label="Grande" value="Grande" />
+                <Picker
+                  selectedValue={novoPorte}
+                  onValueChange={setNovoPorte}
+                  style={styles.picker}
+                  dropdownIconColor="#333"
+                >
+                  <Picker.Item label="Pequeno" value="Pequeno" color="#333" />
+                  <Picker.Item label="Medio" value="Medio" color="#333" />
+                  <Picker.Item label="Grande" value="Grande" color="#333" />
                 </Picker>
               </View>
             </View>
@@ -244,12 +365,18 @@ function NovoAgendamento() {
             </View>
           ) : (
             <View style={styles.pickerContainer}>
-              <Picker selectedValue={servico} onValueChange={(value) => setServico(value)}>
+              <Picker
+                selectedValue={servico}
+                onValueChange={(value) => setServico(value)}
+                style={styles.picker}
+                dropdownIconColor="#333"
+              >
                 {opcoesServicos.map((opcao) => (
                   <Picker.Item
                     key={opcao.value}
                     label={opcao.label}
                     value={opcao.value}
+                    color="#333"
                   />
                 ))}
               </Picker>
@@ -259,19 +386,31 @@ function NovoAgendamento() {
           <TextInput
             placeholder="Data"
             value={data}
-            onChangeText={setData}
+            onChangeText={(valor) => {
+              setData(formatarDataDigitada(valor));
+              limparErro("data");
+            }}
             style={styles.input}
             placeholderTextColor="#999"
+            accessibilityLabel="Data do agendamento"
+            keyboardType="numbers-and-punctuation"
           />
+          {erros.data ? <Text style={styles.erroCampo}>{erros.data}</Text> : null}
 
           <TextInput
             placeholder="Horario"
             value={horario}
-            onChangeText={setHorario}
+            onChangeText={(valor) => {
+              setHorario(valor);
+              limparErro("horario");
+            }}
             onBlur={() => setHorario(formatarHorario(horario))}
             style={styles.input}
             placeholderTextColor="#999"
+            accessibilityLabel="Horário do agendamento"
+            keyboardType="numbers-and-punctuation"
           />
+          {erros.horario ? <Text style={styles.erroCampo}>{erros.horario}</Text> : null}
 
           <TextInput
             placeholder="Preco (opcional)"
@@ -300,14 +439,16 @@ function NovoAgendamento() {
             placeholderTextColor="#999"
           />
 
-          <TouchableOpacity
+          <Pressable
             style={[styles.toggle, pacote && styles.toggleAtivo]}
             onPress={() => setPacote((atual) => !atual)}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: pacote }}
           >
             <Text style={[styles.toggleTexto, pacote && styles.toggleTextoAtivo]}>
               {pacote ? "Pacote de banhos ativo" : "Agendamento avulso"}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
           {pacote ? (
             <View style={styles.campo}>
@@ -316,11 +457,13 @@ function NovoAgendamento() {
                 <Picker
                   selectedValue={quantidadeBanhos}
                   onValueChange={(value) => setQuantidadeBanhos(value)}
+                  style={styles.picker}
+                  dropdownIconColor="#333"
                 >
-                  <Picker.Item label="1 banho" value={1} />
-                  <Picker.Item label="2 banhos" value={2} />
-                  <Picker.Item label="3 banhos" value={3} />
-                  <Picker.Item label="4 banhos" value={4} />
+                  <Picker.Item label="1 banho" value={1} color="#333" />
+                  <Picker.Item label="2 banhos" value={2} color="#333" />
+                  <Picker.Item label="3 banhos" value={3} color="#333" />
+                  <Picker.Item label="4 banhos" value={4} color="#333" />
                 </Picker>
               </View>
               <Text style={styles.ajuda}>
@@ -334,12 +477,15 @@ function NovoAgendamento() {
                 <Picker
                   selectedValue={bonusServico}
                   onValueChange={(value) => setBonusServico(value)}
+                  style={styles.picker}
+                  dropdownIconColor="#333"
                 >
                   {opcoesServicos.map((opcao) => (
                     <Picker.Item
                       key={opcao.value}
                       label={opcao.label}
                       value={opcao.value}
+                      color="#333"
                     />
                   ))}
                 </Picker>
@@ -347,14 +493,16 @@ function NovoAgendamento() {
             </View>
           ) : null}
 
-          <TouchableOpacity
+          <Pressable
             style={[styles.toggle, pago && styles.toggleAtivo]}
             onPress={() => setPago((atual) => !atual)}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: pago }}
           >
             <Text style={[styles.toggleTexto, pago && styles.toggleTextoAtivo]}>
               {pago ? "Pagamento marcado como pago" : "Pagamento pendente"}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
           <View style={styles.imagemBox}>
             <Text style={styles.label}>Imagem do atendimento (opcional)</Text>
@@ -384,12 +532,20 @@ function NovoAgendamento() {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.botao} onPress={salvar}>
-            <Text style={styles.textoBotao}>Salvar agendamento</Text>
+          <TouchableOpacity
+            style={[styles.botao, salvando && styles.botaoDesabilitado]}
+            onPress={salvar}
+            disabled={salvando}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: salvando }}
+          >
+            <Text style={styles.textoBotao}>
+              {salvando ? "Salvando..." : "Salvar agendamento"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </AppScreen>
   );
 }
 

@@ -19,15 +19,29 @@ function DetalhesModal({
   return (
     <Modal visible={visivel} transparent animationType="fade" onRequestClose={onFechar}>
       <View style={styles.overlay}>
-        <View style={styles.card}>
+        <View
+          style={styles.card}
+          accessibilityLabel={titulo}
+        >
           <View style={styles.topo}>
             <Text style={styles.titulo}>{titulo}</Text>
             {onEditar && !editando ? (
-              <TouchableOpacity style={styles.editar} onPress={onEditar}>
+              <TouchableOpacity
+                style={styles.editar}
+                onPress={onEditar}
+                accessibilityRole="button"
+                accessibilityLabel={`Editar ${titulo}`}
+              >
                 <Text style={styles.editarTexto}>Editar</Text>
               </TouchableOpacity>
             ) : null}
-            <TouchableOpacity style={styles.fechar} onPress={onFechar}>
+            <TouchableOpacity
+              style={styles.fechar}
+              onPress={onFechar}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar detalhes"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <Text style={styles.fecharTexto}>X</Text>
             </TouchableOpacity>
           </View>
@@ -42,12 +56,15 @@ function DetalhesModal({
                       <Picker
                         selectedValue={campo.valor}
                         onValueChange={campo.onChangeText}
+                        style={styles.picker}
+                        dropdownIconColor="#333"
                       >
                         {campo.opcoes.map((opcao) => (
                           <Picker.Item
                             key={opcao.value}
                             label={opcao.label}
                             value={opcao.value}
+                            color={opcao.color ?? "#333"}
                           />
                         ))}
                       </Picker>
@@ -78,10 +95,20 @@ function DetalhesModal({
 
             {editando ? (
               <View style={styles.acoes}>
-                <TouchableOpacity style={styles.botaoSalvar} onPress={onSalvar}>
+                <TouchableOpacity
+                  style={styles.botaoSalvar}
+                  onPress={onSalvar}
+                  accessibilityRole="button"
+                  accessibilityLabel="Salvar alterações"
+                >
                   <Text style={styles.textoBotao}>Salvar alteracoes</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.botaoCancelar} onPress={onCancelarEdicao}>
+                <TouchableOpacity
+                  style={styles.botaoCancelar}
+                  onPress={onCancelarEdicao}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancelar edição"
+                >
                   <Text style={styles.textoCancelar}>Cancelar edicao</Text>
                 </TouchableOpacity>
               </View>

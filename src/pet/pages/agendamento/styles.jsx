@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
 
   lista: {
     padding: 15,
-    paddingBottom: 100,
+    paddingBottom: 130,
   },
 
   botaoPrimario: {
@@ -87,7 +87,40 @@ export const styles = StyleSheet.create({
   vazio: {
     color: "#777",
     textAlign: "center",
-    marginTop: 30,
+  },
+
+  estadoVazio: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 18,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#e6e6e6",
+  },
+
+  vazioTitulo: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+
+  vazioTexto: {
+    color: "#777",
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 18,
+    marginTop: 6,
+    marginBottom: 14,
+  },
+
+  botaoVazio: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    alignItems: "center",
   },
 
   tituloDia: {

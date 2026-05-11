@@ -1,12 +1,14 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import AppScreen from "../../components/appScreen";
 import CardAgendamento from "../../components/cardAgendamento";
 import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
 import {
+  formatarDataDigitada,
   dataHoraParaTempo,
   formatarHorario,
   formatarPreco,
@@ -26,7 +28,7 @@ function Agendamentos() {
     cancelarAgendamento,
     concluirAgendamento,
     atualizarAgendamento,
-    obterDono,
+    carregandoDados,
   } = usePetShop();
   const [idSelecionado, setIdSelecionado] = useState(null);
   const [editando, setEditando] = useState(false);
@@ -175,7 +177,7 @@ function Agendamentos() {
     : null;
 
   return (
-    <View style={styles.container}>
+    <AppScreen style={styles.container}>
       <Menu />
 
       <FlatList
@@ -186,6 +188,8 @@ function Agendamentos() {
             <TouchableOpacity
               style={styles.botaoPrimario}
               onPress={() => router.push("/novo-agendamento")}
+              accessibilityRole="button"
+              accessibilityLabel="Criar novo agendamento"
             >
               <Text style={styles.textoBotao}>Novo agendamento</Text>
             </TouchableOpacity>
@@ -197,7 +201,26 @@ function Agendamentos() {
           </>
         }
         ListEmptyComponent={
-          <Text style={styles.vazio}>Nenhum agendamento em aberto.</Text>
+          <View style={styles.estadoVazio}>
+            <Text style={styles.vazioTitulo}>
+              {carregandoDados ? "Carregando agendamentos..." : "Nenhum agendamento em aberto"}
+            </Text>
+            {!carregandoDados ? (
+              <>
+                <Text style={styles.vazioTexto}>
+                  Crie um novo horário para começar a organizar a agenda do dia.
+                </Text>
+                <TouchableOpacity
+                  style={styles.botaoVazio}
+                  onPress={() => router.push("/novo-agendamento")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Criar novo agendamento"
+                >
+                  <Text style={styles.textoBotao}>Novo agendamento</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </View>
         }
         renderItem={({ item }) => {
           if (item.tipo === "dia") {
@@ -267,7 +290,12 @@ function Agendamentos() {
           {
             label: "Data",
             valor: form.data,
-            onChangeText: (valor) => setForm((atual) => ({ ...atual, data: valor })),
+            onChangeText: (valor) =>
+              setForm((atual) => ({
+                ...atual,
+                data: formatarDataDigitada(valor),
+              })),
+            keyboardType: "number-pad",
           },
           {
             label: "Horario",
@@ -368,7 +396,7 @@ function Agendamentos() {
           ) : null
         }
       />
-    </View>
+    </AppScreen>
   );
 }
 

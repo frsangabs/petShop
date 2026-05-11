@@ -1,82 +1,16 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import {
   formatarDataHoraAtual,
   formatarHorario,
   formatarPreco,
 } from "../utils/formatadores";
+import { dadosIniciais } from "../data/dadosIniciais";
 
 const PetShopContext = createContext(null);
-const API_URL = "http://localhost:3333";
-const STORAGE_KEY = "petshop-mvp-dados";
-
-const dadosIniciais = {
-  donos: [
-    {
-      id: "dono-1",
-      nome: "Joao Silva",
-      telefone: "(11) 99999-9999",
-      busca: true,
-    },
-    {
-      id: "dono-2",
-      nome: "Ana Souza",
-      telefone: "(11) 98888-8888",
-      busca: false,
-    },
-  ],
-  pets: [
-    {
-      id: "pet-1",
-      nome: "Rex",
-      raca: "Golden Retriever",
-      porte: "Grande",
-      donoId: "dono-1",
-      foto: "https://placedog.net/200/200?id=1",
-    },
-    {
-      id: "pet-2",
-      nome: "Mia",
-      raca: "Persa",
-      porte: "Pequeno",
-      donoId: "dono-2",
-      foto: "",
-    },
-  ],
-  agendamentos: [
-    {
-      id: "ag-1",
-      petId: "pet-1",
-      servico: "Banho e Tosa",
-      data: "02/05/2026",
-      horario: "10:00",
-      pago: true,
-      pagoEm: "02/05/2026 10:00",
-      preco: "80,00",
-      lamina: "3",
-      observacoes: "Atendimento marcado.",
-      imagemUri: "",
-      pacoteId: null,
-      numeroBanho: null,
-    },
-    {
-      id: "ag-2",
-      petId: "pet-2",
-      servico: "Banho",
-      data: "02/05/2026",
-      horario: "14:30",
-      pago: false,
-      pagoEm: "",
-      preco: "50,00",
-      lamina: "-",
-      observacoes: "Cliente prefere retirada no fim da tarde.",
-      imagemUri: "",
-      pacoteId: null,
-      numeroBanho: null,
-    },
-  ],
-  historico: [],
-  pacotes: [],
-};
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3333";
+const STORAGE_KEY = "petshop-mvp-dados-v2";
 
 function novoId(prefixo) {
   return `${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -89,14 +23,58 @@ function adicionarDias(dataBR, dias) {
   return data.toLocaleDateString("pt-BR");
 }
 
-function carregarDados() {
+async function carregarDadosLocais() {
   try {
-    if (typeof localStorage === "undefined") {
-      return dadosIniciais;
+    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
+      const salvo = localStorage.getItem(STORAGE_KEY);
+      return salvo ? JSON.parse(salvo) : dadosIniciais;
     }
 
-    const salvo = localStorage.getItem(STORAGE_KEY);
+    const salvo = await AsyncStorage.getItem(STORAGE_KEY);
     return salvo ? JSON.parse(salvo) : dadosIniciais;
+  } catch {
+    return dadosIniciais;
+  }
+}
+
+async function salvarDadosLocais(dados) {
+  try {
+    const serializado = JSON.stringify(dados);
+
+    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, serializado);
+      return;
+    }
+
+    await AsyncStorage.setItem(STORAGE_KEY, serializado);
+  } catch {
+    // Persistência local é fallback; falhas não devem bloquear o uso.
+  }
+}
+
+function mensagemErroApi(error) {
+  if (error?.message) {
+    return error.message;
+  }
+
+  return "Não foi possível sincronizar com o servidor.";
+}
+
+function normalizarRespostaLocal(resultado, erro) {
+  return {
+    ...(resultado ?? {}),
+    offline: true,
+    erroSync: mensagemErroApi(erro),
+  };
+}
+
+function dadosPadrao() {
+  try {
+    if (typeof structuredClone === "function") {
+      return structuredClone(dadosIniciais);
+    }
+
+    return JSON.parse(JSON.stringify(dadosIniciais));
   } catch {
     return dadosIniciais;
   }
@@ -109,20 +87,24 @@ async function chamarApi(path, options = {}) {
   });
 
   if (!resposta.ok) {
-    throw new Error("API indisponivel");
+    throw new Error("API indisponível");
   }
 
   return resposta.json();
 }
 
 export function PetShopProvider({ children }) {
-  const [dadosSalvos] = useState(carregarDados);
+  const [dadosSalvos] = useState(dadosPadrao);
   const [donos, setDonos] = useState(dadosSalvos.donos ?? []);
   const [pets, setPets] = useState(dadosSalvos.pets ?? []);
   const [agendamentos, setAgendamentos] = useState(dadosSalvos.agendamentos ?? []);
   const [historico, setHistorico] = useState(dadosSalvos.historico ?? []);
   const [pacotes, setPacotes] = useState(dadosSalvos.pacotes ?? []);
   const [backendOnline, setBackendOnline] = useState(false);
+  const [carregandoDados, setCarregandoDados] = useState(true);
+  const [dadosCarregados, setDadosCarregados] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
+  const [ultimoErroSync, setUltimoErroSync] = useState("");
 
   function aplicarDados(dados) {
     setDonos(dados.donos ?? []);
@@ -133,38 +115,74 @@ export function PetShopProvider({ children }) {
   }
 
   useEffect(() => {
-    chamarApi("/dados")
-      .then((dados) => {
+    let ativo = true;
+
+    async function inicializar() {
+      const locais = await carregarDadosLocais();
+
+      if (!ativo) {
+        return;
+      }
+
+      aplicarDados(locais);
+      setDadosCarregados(true);
+
+      try {
+        const dados = await chamarApi("/dados");
+
+        if (!ativo) {
+          return;
+        }
+
         aplicarDados(dados);
         setBackendOnline(true);
-      })
-      .catch(() => setBackendOnline(false));
+        setUltimoErroSync("");
+      } catch (error) {
+        if (!ativo) {
+          return;
+        }
+
+        setBackendOnline(false);
+        setUltimoErroSync(mensagemErroApi(error));
+      } finally {
+        if (ativo) {
+          setCarregandoDados(false);
+        }
+      }
+    }
+
+    inicializar();
+
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   useEffect(() => {
-    try {
-      if (typeof localStorage !== "undefined") {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ donos, pets, agendamentos, historico, pacotes })
-        );
-      }
-    } catch {
-      // Persistencia local opcional no web.
+    if (!dadosCarregados) {
+      return;
     }
-  }, [donos, pets, agendamentos, historico, pacotes]);
+
+    salvarDadosLocais({ donos, pets, agendamentos, historico, pacotes });
+  }, [dadosCarregados, donos, pets, agendamentos, historico, pacotes]);
 
   async function sincronizar(path, options, fallback) {
+    setSincronizando(true);
+
     try {
       const resultado = await chamarApi(path, options);
       if (resultado.dados) {
         aplicarDados(resultado.dados);
       }
       setBackendOnline(true);
-      return resultado;
-    } catch {
+      setUltimoErroSync("");
+      return { ...resultado, offline: false };
+    } catch (error) {
       setBackendOnline(false);
-      return fallback?.();
+      setUltimoErroSync(mensagemErroApi(error));
+      return normalizarRespostaLocal(fallback?.(), error);
+    } finally {
+      setSincronizando(false);
     }
   }
 
@@ -310,10 +328,14 @@ export function PetShopProvider({ children }) {
         )
       );
 
-      return sincronizar("/agendamentos/" + id, {
-        method: "PATCH",
-        body: JSON.stringify(dadosPagamento),
-      });
+      return sincronizar(
+        "/agendamentos/" + id,
+        {
+          method: "PATCH",
+          body: JSON.stringify(dadosPagamento),
+        },
+        () => ({ pago })
+      );
     }
 
     return atualizarAgendamento(id, dadosPagamento);
@@ -323,20 +345,28 @@ export function PetShopProvider({ children }) {
     setPets((atuais) =>
       atuais.map((pet) => (pet.id === id ? { ...pet, ...dados } : pet))
     );
-    return sincronizar("/pets/" + id, {
-      method: "PATCH",
-      body: JSON.stringify(dados),
-    });
+    return sincronizar(
+      "/pets/" + id,
+      {
+        method: "PATCH",
+        body: JSON.stringify(dados),
+      },
+      () => ({ pet: { id, ...dados } })
+    );
   }
 
   function atualizarDono(id, dados) {
     setDonos((atuais) =>
       atuais.map((dono) => (dono.id === id ? { ...dono, ...dados } : dono))
     );
-    return sincronizar("/donos/" + id, {
-      method: "PATCH",
-      body: JSON.stringify(dados),
-    });
+    return sincronizar(
+      "/donos/" + id,
+      {
+        method: "PATCH",
+        body: JSON.stringify(dados),
+      },
+      () => ({ dono: { id, ...dados } })
+    );
   }
 
   function atualizarAgendamento(id, dados) {
@@ -345,20 +375,28 @@ export function PetShopProvider({ children }) {
         agendamento.id === id ? { ...agendamento, ...dados } : agendamento
       )
     );
-    return sincronizar("/agendamentos/" + id, {
-      method: "PATCH",
-      body: JSON.stringify(dados),
-    });
+    return sincronizar(
+      "/agendamentos/" + id,
+      {
+        method: "PATCH",
+        body: JSON.stringify(dados),
+      },
+      () => ({ agendamento: { id, ...dados } })
+    );
   }
 
   function atualizarPacote(id, dados) {
     setPacotes((atuais) =>
       atuais.map((pacote) => (pacote.id === id ? { ...pacote, ...dados } : pacote))
     );
-    return sincronizar("/pacotes/" + id, {
-      method: "PATCH",
-      body: JSON.stringify(dados),
-    });
+    return sincronizar(
+      "/pacotes/" + id,
+      {
+        method: "PATCH",
+        body: JSON.stringify(dados),
+      },
+      () => ({ pacote: { id, ...dados } })
+    );
   }
 
   function atualizarHistorico(id, dados) {
@@ -367,17 +405,25 @@ export function PetShopProvider({ children }) {
         registro.id === id ? { ...registro, ...dados } : registro
       )
     );
-    return sincronizar("/historico/" + id, {
-      method: "PATCH",
-      body: JSON.stringify(dados),
-    });
+    return sincronizar(
+      "/historico/" + id,
+      {
+        method: "PATCH",
+        body: JSON.stringify(dados),
+      },
+      () => ({ registro: { id, ...dados } })
+    );
   }
 
   function cancelarAgendamento(id) {
     setAgendamentos((atuais) =>
       atuais.filter((agendamento) => agendamento.id !== id)
     );
-    return sincronizar("/agendamentos/" + id, { method: "DELETE" });
+    return sincronizar(
+      "/agendamentos/" + id,
+      { method: "DELETE" },
+      () => ({ removido: true })
+    );
   }
 
   function concluirAgendamento(id) {
@@ -395,7 +441,11 @@ export function PetShopProvider({ children }) {
       setAgendamentos((atuais) => atuais.filter((item) => item.id !== id));
     }
 
-    return sincronizar(`/agendamentos/${id}/concluir`, { method: "POST" });
+    return sincronizar(
+      `/agendamentos/${id}/concluir`,
+      { method: "POST" },
+      () => ({ concluido: true })
+    );
   }
 
   function obterPet(id) {
@@ -417,6 +467,10 @@ export function PetShopProvider({ children }) {
     historico,
     pacotes,
     backendOnline,
+    carregandoDados,
+    sincronizando,
+    ultimoErroSync,
+    apiUrl: API_URL,
     criarPet,
     criarAgendamento,
     criarPacoteBanhos,

@@ -1,61 +1,53 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dbPath = path.resolve(__dirname, "../data/db.json");
-
 export const dadosIniciais = {
   donos: [
     {
       id: "dono-mariana-alves",
       nome: "Mariana Alves",
       telefone: "(11) 98432-1180",
-      busca: true
+      busca: true,
     },
     {
       id: "dono-roberto-lima",
       nome: "Roberto Lima",
       telefone: "(11) 97214-5530",
-      busca: false
+      busca: false,
     },
     {
       id: "dono-camila-ferreira",
       nome: "Camila Ferreira",
       telefone: "(11) 96548-2201",
-      busca: true
+      busca: true,
     },
     {
       id: "dono-paulo-nogueira",
       nome: "Paulo Nogueira",
       telefone: "(11) 99176-4420",
-      busca: false
+      busca: false,
     },
     {
       id: "dono-juliana-ramos",
       nome: "Juliana Ramos",
       telefone: "(11) 98765-1402",
-      busca: false
+      busca: false,
     },
     {
       id: "dono-rafael-mendes",
       nome: "Rafael Mendes",
       telefone: "(11) 97642-8890",
-      busca: true
+      busca: true,
     },
     {
       id: "dono-patricia-duarte",
       nome: "Patricia Duarte",
       telefone: "(11) 99418-6721",
-      busca: false
+      busca: false,
     },
     {
       id: "dono-andre-costa",
       nome: "Andre Costa",
       telefone: "(11) 96810-3344",
-      busca: false
-    }
+      busca: false,
+    },
   ],
   pets: [
     {
@@ -64,7 +56,7 @@ export const dadosIniciais = {
       raca: "Shih Tzu",
       porte: "Pequeno",
       donoId: "dono-mariana-alves",
-      foto: "https://placedog.net/300/300?id=21"
+      foto: "https://placedog.net/300/300?id=21",
     },
     {
       id: "pet-thor",
@@ -72,7 +64,7 @@ export const dadosIniciais = {
       raca: "Labrador",
       porte: "Grande",
       donoId: "dono-roberto-lima",
-      foto: "https://placedog.net/300/300?id=22"
+      foto: "https://placedog.net/300/300?id=22",
     },
     {
       id: "pet-mel",
@@ -80,7 +72,7 @@ export const dadosIniciais = {
       raca: "Spitz Alemao",
       porte: "Pequeno",
       donoId: "dono-camila-ferreira",
-      foto: "https://placedog.net/300/300?id=23"
+      foto: "https://placedog.net/300/300?id=23",
     },
     {
       id: "pet-bento",
@@ -88,7 +80,7 @@ export const dadosIniciais = {
       raca: "SRD",
       porte: "Medio",
       donoId: "dono-paulo-nogueira",
-      foto: ""
+      foto: "",
     },
     {
       id: "pet-nina",
@@ -96,7 +88,7 @@ export const dadosIniciais = {
       raca: "Golden Retriever",
       porte: "Grande",
       donoId: "dono-juliana-ramos",
-      foto: "https://placedog.net/300/300?id=24"
+      foto: "https://placedog.net/300/300?id=24",
     },
     {
       id: "pet-simba",
@@ -104,7 +96,7 @@ export const dadosIniciais = {
       raca: "Persa",
       porte: "Pequeno",
       donoId: "dono-rafael-mendes",
-      foto: ""
+      foto: "",
     },
     {
       id: "pet-pipoca",
@@ -112,7 +104,7 @@ export const dadosIniciais = {
       raca: "Poodle",
       porte: "Medio",
       donoId: "dono-patricia-duarte",
-      foto: "https://placedog.net/300/300?id=25"
+      foto: "https://placedog.net/300/300?id=25",
     },
     {
       id: "pet-bob",
@@ -120,7 +112,7 @@ export const dadosIniciais = {
       raca: "Bulldog Frances",
       porte: "Medio",
       donoId: "dono-andre-costa",
-      foto: "https://placedog.net/300/300?id=26"
+      foto: "https://placedog.net/300/300?id=26",
     },
     {
       id: "pet-amora",
@@ -128,7 +120,7 @@ export const dadosIniciais = {
       raca: "Yorkshire",
       porte: "Pequeno",
       donoId: "dono-mariana-alves",
-      foto: ""
+      foto: "",
     },
     {
       id: "pet-olivia",
@@ -136,8 +128,8 @@ export const dadosIniciais = {
       raca: "Border Collie",
       porte: "Grande",
       donoId: "dono-camila-ferreira",
-      foto: ""
-    }
+      foto: "",
+    },
   ],
   agendamentos: [
     {
@@ -153,7 +145,7 @@ export const dadosIniciais = {
       observacoes: "Tosar baixinho e usar laco azul.",
       imagemUri: "",
       pacoteId: null,
-      numeroBanho: null
+      numeroBanho: null,
     },
     {
       id: "ag-thor-20260511",
@@ -168,7 +160,7 @@ export const dadosIniciais = {
       observacoes: "Usar shampoo neutro. Tutor busca as 17h.",
       imagemUri: "",
       pacoteId: null,
-      numeroBanho: null
+      numeroBanho: null,
     },
     {
       id: "ag-pipoca-p2",
@@ -183,7 +175,7 @@ export const dadosIniciais = {
       observacoes: "Segundo banho do pacote. Conferir ouvido esquerdo.",
       imagemUri: "",
       pacoteId: "pacote-pipoca-maio",
-      numeroBanho: 2
+      numeroBanho: 2,
     },
     {
       id: "ag-simba-20260512",
@@ -198,7 +190,7 @@ export const dadosIniciais = {
       observacoes: "Gato arisco. Manusear com calma e evitar secador forte.",
       imagemUri: "",
       pacoteId: null,
-      numeroBanho: null
+      numeroBanho: null,
     },
     {
       id: "ag-nina-20260512",
@@ -213,7 +205,7 @@ export const dadosIniciais = {
       observacoes: "Inclui hidratacao e escovacao reforcada.",
       imagemUri: "",
       pacoteId: null,
-      numeroBanho: null
+      numeroBanho: null,
     },
     {
       id: "ag-bento-p2",
@@ -228,7 +220,7 @@ export const dadosIniciais = {
       observacoes: "Segundo banho do pacote.",
       imagemUri: "",
       pacoteId: "pacote-bento-maio",
-      numeroBanho: 2
+      numeroBanho: 2,
     },
     {
       id: "ag-olivia-20260513",
@@ -243,7 +235,7 @@ export const dadosIniciais = {
       observacoes: "Remover nos atras da orelha antes do banho.",
       imagemUri: "",
       pacoteId: null,
-      numeroBanho: null
+      numeroBanho: null,
     },
     {
       id: "ag-bob-20260514",
@@ -258,7 +250,7 @@ export const dadosIniciais = {
       observacoes: "Manter focinho arredondado.",
       imagemUri: "",
       pacoteId: null,
-      numeroBanho: null
+      numeroBanho: null,
     },
     {
       id: "ag-pipoca-p3",
@@ -273,7 +265,7 @@ export const dadosIniciais = {
       observacoes: "Terceiro banho do pacote.",
       imagemUri: "",
       pacoteId: "pacote-pipoca-maio",
-      numeroBanho: 3
+      numeroBanho: 3,
     },
     {
       id: "ag-bento-p3",
@@ -288,7 +280,7 @@ export const dadosIniciais = {
       observacoes: "Ultimo banho do pacote.",
       imagemUri: "",
       pacoteId: "pacote-bento-maio",
-      numeroBanho: 3
+      numeroBanho: 3,
     },
     {
       id: "ag-pipoca-p4",
@@ -303,8 +295,8 @@ export const dadosIniciais = {
       observacoes: "Ultimo banho do pacote.",
       imagemUri: "",
       pacoteId: "pacote-pipoca-maio",
-      numeroBanho: 4
-    }
+      numeroBanho: 4,
+    },
   ],
   historico: [
     {
@@ -321,7 +313,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: null,
       numeroBanho: null,
-      concluidoEm: "02/05/2026"
+      concluidoEm: "02/05/2026",
     },
     {
       id: "hist-mel-20260503",
@@ -337,7 +329,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: null,
       numeroBanho: null,
-      concluidoEm: "03/05/2026"
+      concluidoEm: "03/05/2026",
     },
     {
       id: "hist-thor-20260504",
@@ -353,7 +345,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: null,
       numeroBanho: null,
-      concluidoEm: "04/05/2026"
+      concluidoEm: "04/05/2026",
     },
     {
       id: "hist-pipoca-p1",
@@ -369,7 +361,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: "pacote-pipoca-maio",
       numeroBanho: 1,
-      concluidoEm: "04/05/2026"
+      concluidoEm: "04/05/2026",
     },
     {
       id: "hist-bob-20260505",
@@ -385,7 +377,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: null,
       numeroBanho: null,
-      concluidoEm: "05/05/2026"
+      concluidoEm: "05/05/2026",
     },
     {
       id: "hist-bento-p1",
@@ -401,7 +393,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: "pacote-bento-maio",
       numeroBanho: 1,
-      concluidoEm: "06/05/2026"
+      concluidoEm: "06/05/2026",
     },
     {
       id: "hist-simba-20260507",
@@ -417,7 +409,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: null,
       numeroBanho: null,
-      concluidoEm: "07/05/2026"
+      concluidoEm: "07/05/2026",
     },
     {
       id: "hist-nina-20260508",
@@ -433,7 +425,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: null,
       numeroBanho: null,
-      concluidoEm: "08/05/2026"
+      concluidoEm: "08/05/2026",
     },
     {
       id: "hist-amora-20260509",
@@ -449,7 +441,7 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: null,
       numeroBanho: null,
-      concluidoEm: "09/05/2026"
+      concluidoEm: "09/05/2026",
     },
     {
       id: "hist-mel-20260510",
@@ -465,8 +457,8 @@ export const dadosIniciais = {
       imagemUri: "",
       pacoteId: null,
       numeroBanho: null,
-      concluidoEm: "10/05/2026"
-    }
+      concluidoEm: "10/05/2026",
+    },
   ],
   pacotes: [
     {
@@ -479,7 +471,7 @@ export const dadosIniciais = {
       bonusServico: "Tosa Higienica",
       bonusConcluido: false,
       bonusConcluidoEm: "",
-      criadoEm: "2026-05-01T12:00:00.000Z"
+      criadoEm: "2026-05-01T12:00:00.000Z",
     },
     {
       id: "pacote-bento-maio",
@@ -491,26 +483,7 @@ export const dadosIniciais = {
       bonusServico: "Hidratacao das patas",
       bonusConcluido: true,
       bonusConcluidoEm: "10/05/2026 15:00",
-      criadoEm: "2026-05-03T15:30:00.000Z"
-    }
-  ]
+      criadoEm: "2026-05-03T15:30:00.000Z",
+    },
+  ],
 };
-
-export function novoId(prefixo) {
-  return `${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export async function carregarDb() {
-  try {
-    const conteudo = await readFile(dbPath, "utf8");
-    return JSON.parse(conteudo);
-  } catch {
-    await salvarDb(dadosIniciais);
-    return structuredClone(dadosIniciais);
-  }
-}
-
-export async function salvarDb(dados) {
-  await mkdir(path.dirname(dbPath), { recursive: true });
-  await writeFile(dbPath, JSON.stringify(dados, null, 2));
-}

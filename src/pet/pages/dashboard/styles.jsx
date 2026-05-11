@@ -8,7 +8,7 @@ export const styles = StyleSheet.create({
 
   conteudo: {
     padding: 15,
-    paddingBottom: 110,
+    paddingBottom: 140,
   },
 
   titulo: {

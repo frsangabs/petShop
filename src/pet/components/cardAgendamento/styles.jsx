@@ -91,6 +91,8 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
+    minHeight: 40,
+    justifyContent: "center",
   },
 
   botaoConcluir: {
@@ -98,6 +100,8 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
+    minHeight: 40,
+    justifyContent: "center",
   },
 
   botaoCancelar: {
@@ -105,6 +109,8 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
+    minHeight: 40,
+    justifyContent: "center",
   },
 
   textoSecundario: {
