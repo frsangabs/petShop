@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import AppScreen from "../../components/appScreen";
@@ -8,10 +8,13 @@ import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
 import {
-  formatarDataDigitada,
   dataHoraParaTempo,
+  dataValidaBR,
+  formatarDataDigitada,
   formatarHorario,
+  formatarHorarioMascara,
   formatarPreco,
+  horarioValido,
 } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
 import { opcoesServicos } from "../../utils/servicos";
@@ -19,6 +22,7 @@ import { styles } from "./styles";
 
 function Agendamentos() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const {
     agendamentos,
     pets,
@@ -41,7 +45,8 @@ function Agendamentos() {
     observacoes: "",
     imagemUri: "",
   });
-  const [busca, setBusca] = useState("");
+  const [formErros, setFormErros] = useState({});
+  const [busca, setBusca] = useState(String(params.busca ?? ""));
 
   const agendamentoSelecionado = useMemo(
     () => agendamentos.find((ag) => ag.id === idSelecionado) ?? null,
@@ -82,6 +87,7 @@ function Agendamentos() {
   function abrirAgendamento(agendamento) {
     setIdSelecionado(agendamento.id);
     setEditando(false);
+    setFormErros({});
     setForm({
       servico: agendamento.servico,
       data: agendamento.data,
@@ -151,10 +157,27 @@ function Agendamentos() {
   function fecharModal() {
     setIdSelecionado(null);
     setEditando(false);
+    setFormErros({});
   }
 
   function salvarAgendamento() {
     if (!agendamentoSelecionado) {
+      return;
+    }
+
+    const erros = {};
+
+    if (!dataValidaBR(form.data)) {
+      erros.data = "Informe uma data valida.";
+    }
+
+    if (!horarioValido(form.horario)) {
+      erros.horario = "Informe um horario valido.";
+    }
+
+    setFormErros(erros);
+
+    if (Object.keys(erros).length) {
       return;
     }
 
@@ -290,23 +313,36 @@ function Agendamentos() {
           {
             label: "Data",
             valor: form.data,
+            tipo: "date",
+            erro: formErros.data,
             onChangeText: (valor) =>
-              setForm((atual) => ({
-                ...atual,
-                data: formatarDataDigitada(valor),
-              })),
+              {
+                setForm((atual) => ({
+                  ...atual,
+                  data: formatarDataDigitada(valor),
+                }));
+                setFormErros((atuais) => ({ ...atuais, data: "" }));
+              },
             keyboardType: "number-pad",
           },
           {
             label: "Horario",
             valor: form.horario,
+            erro: formErros.horario,
             onChangeText: (valor) =>
-              setForm((atual) => ({ ...atual, horario: valor })),
+              {
+                setForm((atual) => ({
+                  ...atual,
+                  horario: formatarHorarioMascara(valor),
+                }));
+                setFormErros((atuais) => ({ ...atuais, horario: "" }));
+              },
             onBlur: () =>
               setForm((atual) => ({
                 ...atual,
                 horario: formatarHorario(atual.horario),
               })),
+            keyboardType: "number-pad",
           },
           {
             label: "Preco",

@@ -3,16 +3,19 @@ import {
   Modal,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import AppScreen from "../../components/appScreen";
+import DateInput from "../../components/dateInput";
 import Menu from "../../components/navbar";
 import { usePetShop } from "../../context/PetShopContext";
 import {
+  adicionarDiasDataBR,
+  dataBRParaDate,
   dataHoraParaTempo,
   formatarDataDigitada,
+  formatarDataBR,
   formatarDataHoraAtual,
 } from "../../utils/formatadores";
 import { styles } from "./styles";
@@ -20,8 +23,8 @@ import { styles } from "./styles";
 const tabs = ["Geral", "Pets", "Donos", "Pacotes abertos"];
 
 function parseDataBR(valor) {
-  const [dia, mes, ano] = String(valor ?? "").split("/").map(Number);
-  return new Date(ano, mes - 1, dia).getTime();
+  const data = dataBRParaDate(valor);
+  return data ? data.getTime() : Number.NaN;
 }
 
 function dentroDoPeriodo(registro, inicio, fim) {
@@ -29,6 +32,9 @@ function dentroDoPeriodo(registro, inicio, fim) {
   const tempo = parseDataBR(dataBase);
   const inicioTempo = inicio ? parseDataBR(inicio) : Number.NEGATIVE_INFINITY;
   const fimTempo = fim ? parseDataBR(fim) : Number.POSITIVE_INFINITY;
+  if (Number.isNaN(tempo) || Number.isNaN(inicioTempo) || Number.isNaN(fimTempo)) {
+    return false;
+  }
   return tempo >= inicioTempo && tempo <= fimTempo;
 }
 
@@ -79,6 +85,9 @@ function Barras({ dados, limite = 5, onPress }) {
             style={styles.barraLinha}
             activeOpacity={onPress ? 0.75 : 1}
             onPress={() => onPress?.(item)}
+            accessibilityRole={onPress ? "button" : "text"}
+            accessibilityLabel={`${item.nome}: ${item.quantidade} atendimento${item.quantidade === 1 ? "" : "s"}`}
+            accessibilityHint={onPress ? "Toque para ver os detalhes" : undefined}
           >
             <View style={styles.barraTopo}>
               <Text style={styles.barraLabel} numberOfLines={1}>
@@ -105,12 +114,23 @@ function Barras({ dados, limite = 5, onPress }) {
 
 function DetalheModal({ titulo, visivel, onFechar, children }) {
   return (
-    <Modal visible={visivel} transparent animationType="fade" onRequestClose={onFechar}>
+    <Modal
+      visible={visivel}
+      transparent
+      animationType="fade"
+      onRequestClose={onFechar}
+      accessibilityViewIsModal
+    >
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={styles.modalCard} accessibilityLabel={titulo}>
           <View style={styles.modalTopo}>
             <Text style={styles.modalTitulo}>{titulo}</Text>
-            <TouchableOpacity style={styles.fechar} onPress={onFechar}>
+            <TouchableOpacity
+              style={styles.fechar}
+              onPress={onFechar}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar detalhes"
+            >
               <Text style={styles.fecharTexto}>X</Text>
             </TouchableOpacity>
           </View>
@@ -137,10 +157,27 @@ function Dashboard() {
   const [petSelecionado, setPetSelecionado] = useState(null);
   const [donoSelecionado, setDonoSelecionado] = useState(null);
   const [pacoteSelecionado, setPacoteSelecionado] = useState(null);
+  const inicioValido = !inicio || Boolean(dataBRParaDate(inicio));
+  const fimValido = !fim || Boolean(dataBRParaDate(fim));
+  const periodoInvertido =
+    inicioValido &&
+    fimValido &&
+    inicio &&
+    fim &&
+    parseDataBR(inicio) > parseDataBR(fim);
+  const filtrosValidos = inicioValido && fimValido && !periodoInvertido;
+  const inicioFiltro = filtrosValidos ? inicio : "";
+  const fimFiltro = filtrosValidos ? fim : "";
+
+  function aplicarPeriodo(dias) {
+    const fimPeriodo = formatarDataBR(new Date());
+    setFim(fimPeriodo);
+    setInicio(adicionarDiasDataBR(fimPeriodo, -dias));
+  }
 
   const dashboard = useMemo(() => {
     const registros = historico.filter((registro) =>
-      dentroDoPeriodo(registro, inicio, fim)
+      dentroDoPeriodo(registro, inicioFiltro, fimFiltro)
     );
     const porServico = new Map();
     const porPetServico = new Map();
@@ -202,7 +239,7 @@ function Dashboard() {
         continue;
       }
 
-      if (!dentroDoPeriodo({ data: dataReferencia }, inicio, fim)) {
+      if (!dentroDoPeriodo({ data: dataReferencia }, inicioFiltro, fimFiltro)) {
         continue;
       }
 
@@ -292,7 +329,7 @@ function Dashboard() {
       pacotesResumo,
       registrosPorServico,
     };
-  }, [historico, pets, donos, pacotes, agendamentos, inicio, fim]);
+  }, [historico, pets, donos, pacotes, agendamentos, inicioFiltro, fimFiltro]);
 
   const servicoMaisContratado = dashboard.servicosMaisContratados[0]?.nome ?? "-";
   const petMaisRecorrente = dashboard.servicosPorPet[0]?.nome ?? "-";
@@ -323,40 +360,92 @@ function Dashboard() {
         <Text style={styles.titulo}>Dashboard</Text>
 
         <View style={styles.filtros}>
-          <TextInput
+          <DateInput
+            label="Data inicial"
             value={inicio}
-            onChangeText={(valor) => setInicio(formatarDataDigitada(valor))}
-            placeholder="Data inicial"
-            placeholderTextColor="#999"
-            style={styles.input}
-            keyboardType="number-pad"
+            onChange={(valor) => setInicio(formatarDataDigitada(valor))}
+            erro={!inicioValido ? "Data inicial invalida." : ""}
+            accessibilityLabel="Data inicial do dashboard"
+            mostrarAtalhos={false}
+            style={styles.filtroData}
           />
-          <TextInput
+          <DateInput
+            label="Data final"
             value={fim}
-            onChangeText={(valor) => setFim(formatarDataDigitada(valor))}
-            placeholder="Data final"
-            placeholderTextColor="#999"
-            style={styles.input}
-            keyboardType="number-pad"
+            onChange={(valor) => setFim(formatarDataDigitada(valor))}
+            erro={!fimValido ? "Data final invalida." : ""}
+            accessibilityLabel="Data final do dashboard"
+            mostrarAtalhos={false}
+            style={styles.filtroData}
           />
+        </View>
+        {periodoInvertido ? (
+          <Text style={styles.erroFiltro}>
+            A data inicial precisa vir antes da data final.
+          </Text>
+        ) : null}
+        <View style={styles.atalhosFiltro}>
+          <TouchableOpacity
+            style={styles.atalhoFiltro}
+            onPress={() => aplicarPeriodo(7)}
+            accessibilityRole="button"
+            accessibilityLabel="Filtrar ultimos 7 dias"
+          >
+            <Text style={styles.atalhoFiltroTexto}>7 dias</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.atalhoFiltro}
+            onPress={() => aplicarPeriodo(30)}
+            accessibilityRole="button"
+            accessibilityLabel="Filtrar ultimos 30 dias"
+          >
+            <Text style={styles.atalhoFiltroTexto}>30 dias</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.atalhoFiltro}
+            onPress={() => {
+              setInicio("");
+              setFim("");
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Limpar filtro de datas"
+          >
+            <Text style={styles.atalhoFiltroTexto}>Limpar</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.resumoGrid}>
-          <View style={styles.resumoCard}>
+          <View
+            style={styles.resumoCard}
+            accessibilityRole="text"
+            accessibilityLabel={`${dashboard.totalAtendimentos} atendimentos no periodo`}
+          >
             <Text style={styles.resumoValor}>{dashboard.totalAtendimentos}</Text>
             <Text style={styles.resumoLabel}>Atendimentos</Text>
           </View>
-          <View style={styles.resumoCard}>
+          <View
+            style={styles.resumoCard}
+            accessibilityRole="text"
+            accessibilityLabel={`Receita de ${dashboard.receita} reais no periodo`}
+          >
             <Text style={styles.resumoValor}>R$ {dashboard.receita}</Text>
             <Text style={styles.resumoLabel}>Receita</Text>
           </View>
-          <View style={styles.resumoCard}>
+          <View
+            style={styles.resumoCard}
+            accessibilityRole="text"
+            accessibilityLabel={`Servico mais contratado: ${servicoMaisContratado}`}
+          >
             <Text style={styles.resumoValor} numberOfLines={1}>
               {servicoMaisContratado}
             </Text>
             <Text style={styles.resumoLabel}>Servico top</Text>
           </View>
-          <View style={styles.resumoCard}>
+          <View
+            style={styles.resumoCard}
+            accessibilityRole="text"
+            accessibilityLabel={`Pet mais recorrente: ${petMaisRecorrente}`}
+          >
             <Text style={styles.resumoValor} numberOfLines={1}>
               {petMaisRecorrente}
             </Text>
@@ -370,6 +459,9 @@ function Dashboard() {
               key={item}
               style={[styles.tab, aba === item && styles.tabAtiva]}
               onPress={() => setAba(item)}
+              accessibilityRole="tab"
+              accessibilityLabel={`Abrir aba ${item}`}
+              accessibilityState={{ selected: aba === item }}
             >
               <Text style={[styles.tabTexto, aba === item && styles.tabTextoAtivo]}>
                 {item}
@@ -397,6 +489,8 @@ function Dashboard() {
                   key={item.nome}
                   style={styles.petLinha}
                   onPress={() => setPetSelecionado(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.nome}, ${item.quantidade} atendimentos`}
                 >
                   <View>
                     <Text style={styles.petNome}>{item.nome}</Text>
@@ -429,6 +523,8 @@ function Dashboard() {
                   key={item.pacote.id}
                   style={styles.petLinha}
                   onPress={() => setPacoteSelecionado(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.pet}, pacote com ${item.banhosConcluidos} de ${item.quantidade} banhos feitos`}
                 >
                   <View style={styles.petLinhaConteudo}>
                     <Text style={styles.petNome}>{item.nome}</Text>

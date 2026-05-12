@@ -42,16 +42,26 @@ export async function salvarPetComDono(pet, dono) {
       db.donos.push(dono);
     }
 
-    db.pets.push(pet);
+    db.pets = db.pets.some((item) => item.id === pet.id)
+      ? db.pets.map((item) => (item.id === pet.id ? { ...item, ...pet } : item))
+      : [...db.pets, pet];
     await salvarDb(db);
     return carregarDados();
   }
 
   if (dono) {
-    await prisma.dono.create({ data: dono });
+    await prisma.dono.upsert({
+      where: { id: dono.id },
+      update: dono,
+      create: dono
+    });
   }
 
-  await prisma.pet.create({ data: pet });
+  await prisma.pet.upsert({
+    where: { id: pet.id },
+    update: pet,
+    create: pet
+  });
   return carregarDados();
 }
 
@@ -82,28 +92,52 @@ export async function atualizarDono(id, dados) {
 export async function criarAgendamento(agendamento) {
   if (!usarPrisma) {
     const db = await carregarDb();
-    db.agendamentos.push(agendamento);
+    db.agendamentos = db.agendamentos.some((item) => item.id === agendamento.id)
+      ? db.agendamentos.map((item) =>
+          item.id === agendamento.id ? { ...item, ...agendamento } : item
+        )
+      : [...db.agendamentos, agendamento];
     await salvarDb(db);
     return carregarDados();
   }
 
-  await prisma.agendamento.create({ data: agendamento });
+  await prisma.agendamento.upsert({
+    where: { id: agendamento.id },
+    update: agendamento,
+    create: agendamento
+  });
   return carregarDados();
 }
 
 export async function criarPacoteComAgendamentos(pacote, agendamentos) {
   if (!usarPrisma) {
     const db = await carregarDb();
-    db.pacotes.push(pacote);
-    db.agendamentos.push(...agendamentos);
+    db.pacotes = db.pacotes.some((item) => item.id === pacote.id)
+      ? db.pacotes.map((item) => (item.id === pacote.id ? { ...item, ...pacote } : item))
+      : [...db.pacotes, pacote];
+    for (const agendamento of agendamentos) {
+      db.agendamentos = db.agendamentos.some((item) => item.id === agendamento.id)
+        ? db.agendamentos.map((item) =>
+            item.id === agendamento.id ? { ...item, ...agendamento } : item
+          )
+        : [...db.agendamentos, agendamento];
+    }
     await salvarDb(db);
     return carregarDados();
   }
 
   await prisma.$transaction([
-    prisma.pacoteBanhos.create({ data: pacote }),
+    prisma.pacoteBanhos.upsert({
+      where: { id: pacote.id },
+      update: pacote,
+      create: pacote
+    }),
     ...agendamentos.map((agendamento) =>
-      prisma.agendamento.create({ data: agendamento })
+      prisma.agendamento.upsert({
+        where: { id: agendamento.id },
+        update: agendamento,
+        create: agendamento
+      })
     )
   ]);
   return carregarDados();
@@ -186,7 +220,7 @@ export async function removerAgendamento(id) {
     return carregarDados();
   }
 
-  await prisma.agendamento.delete({ where: { id } });
+  await prisma.agendamento.deleteMany({ where: { id } });
   return carregarDados();
 }
 

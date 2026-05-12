@@ -21,7 +21,11 @@ export const styles = StyleSheet.create({
   filtros: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 4,
+  },
+
+  filtroData: {
+    flex: 1,
   },
 
   input: {
@@ -32,6 +36,34 @@ export const styles = StyleSheet.create({
     borderColor: "#e6e6e6",
     padding: 12,
     fontSize: 14,
+  },
+
+  erroFiltro: {
+    color: "#F44336",
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+
+  atalhosFiltro: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  atalhoFiltro: {
+    minHeight: 40,
+    borderRadius: 10,
+    backgroundColor: "#eef4ff",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+
+  atalhoFiltroTexto: {
+    color: "#2f80ed",
+    fontSize: 13,
+    fontWeight: "800",
   },
 
   resumoGrid: {
@@ -229,9 +261,9 @@ export const styles = StyleSheet.create({
   },
 
   fechar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#f2f2f2",
     alignItems: "center",
     justifyContent: "center",

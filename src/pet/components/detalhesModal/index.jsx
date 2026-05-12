@@ -1,5 +1,6 @@
 import { Picker } from "@react-native-picker/picker";
 import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import DateInput from "../dateInput";
 import { styles } from "./styles";
 
 function DetalhesModal({
@@ -17,7 +18,13 @@ function DetalhesModal({
   editExtra,
 }) {
   return (
-    <Modal visible={visivel} transparent animationType="fade" onRequestClose={onFechar}>
+    <Modal
+      visible={visivel}
+      transparent
+      animationType="fade"
+      onRequestClose={onFechar}
+      accessibilityViewIsModal
+    >
       <View style={styles.overlay}>
         <View
           style={styles.card}
@@ -51,7 +58,14 @@ function DetalhesModal({
               ? campos.map((campo) => (
                   <View key={campo.label} style={styles.linha}>
                   <Text style={styles.label}>{campo.label}</Text>
-                  {campo.tipo === "select" ? (
+                  {campo.tipo === "date" ? (
+                    <DateInput
+                      value={campo.valor}
+                      onChange={campo.onChangeText}
+                      erro={campo.erro}
+                      accessibilityLabel={campo.accessibilityLabel ?? campo.label}
+                    />
+                  ) : campo.tipo === "select" ? (
                     <View style={styles.pickerContainer}>
                       <Picker
                         selectedValue={campo.valor}
@@ -74,13 +88,20 @@ function DetalhesModal({
                       value={campo.valor}
                       onChangeText={campo.onChangeText}
                       onBlur={campo.onBlur}
-                      style={[styles.input, campo.multiline && styles.textarea]}
+                      style={[
+                        styles.input,
+                        campo.erro && styles.inputErro,
+                        campo.multiline && styles.textarea,
+                      ]}
                       multiline={campo.multiline}
                       keyboardType={campo.keyboardType}
                       placeholder={campo.placeholder ?? campo.label}
                       placeholderTextColor="#999"
                     />
                   )}
+                  {campo.erro && campo.tipo !== "date" ? (
+                    <Text style={styles.erroCampo}>{campo.erro}</Text>
+                  ) : null}
                 </View>
               ))
               : linhas.map((linha) => (

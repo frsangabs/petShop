@@ -121,7 +121,7 @@ async function roteador(req, res) {
 
       if (!donoId) {
         const donoExistente = encontrarDonoPorTelefone(dados.donos, body.telefone);
-        donoId = donoExistente?.id ?? novoId("dono");
+        donoId = donoExistente?.id ?? body.novoDonoId ?? novoId("dono");
 
         if (!donoExistente) {
           novoDono = {
@@ -134,7 +134,7 @@ async function roteador(req, res) {
       }
 
       const pet = {
-        id: novoId("pet"),
+        id: body.id ?? novoId("pet"),
         nome: String(body.nome ?? "").trim(),
         raca: String(body.raca ?? "").trim(),
         porte: body.porte,
@@ -159,7 +159,7 @@ async function roteador(req, res) {
     if (req.method === "POST" && url.pathname === "/agendamentos") {
       const body = await lerBody(req);
       const agendamento = {
-        id: novoId("ag"),
+        id: body.id ?? novoId("ag"),
         petId: body.petId,
         servico: String(body.servico ?? "").trim(),
         data: String(body.data ?? "").trim(),
@@ -184,7 +184,7 @@ async function roteador(req, res) {
     if (req.method === "POST" && url.pathname === "/pacotes") {
       const body = await lerBody(req);
       const quantidade = Math.min(Math.max(Number(body.quantidadeBanhos), 1), 4);
-      const pacoteId = novoId("pacote");
+      const pacoteId = body.id ?? body.pacoteId ?? novoId("pacote");
       const pacote = {
         id: pacoteId,
         petId: body.petId,
@@ -194,10 +194,11 @@ async function roteador(req, res) {
         servico: "Banho",
         bonusServico: String(body.bonusServico ?? "Tosa Higiênica").trim(),
         bonusConcluido: false,
-        bonusConcluidoEm: ""
+        bonusConcluidoEm: "",
+        criadoEm: body.criadoEm ?? new Date().toISOString()
       };
       const agendamentos = Array.from({ length: quantidade }, (_, index) => ({
-        id: novoId("ag"),
+        id: body.agendamentoIds?.[index] ?? novoId("ag"),
         petId: body.petId,
         servico: pacote.servico,
         data: adicionarDias(pacote.dataPrimeiroBanho, index * 7),

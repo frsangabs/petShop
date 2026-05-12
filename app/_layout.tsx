@@ -28,7 +28,6 @@ export default function RootLayout() {
             <Stack.Screen name="criar-pet" options={{ headerShown: false }} />
             <Stack.Screen name="novo-agendamento" options={{ headerShown: false }} />
             <Stack.Screen name="detalhe-agendamento/[id]" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
         </PetShopProvider>
         <StatusBar style="auto" />

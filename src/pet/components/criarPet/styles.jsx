@@ -15,10 +15,33 @@ export const styles = StyleSheet.create({
   },
 
   titulo: {
+    flex: 1,
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 15,
     color: "#333",
+  },
+
+  cabecalho: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 15,
+  },
+
+  botaoSair: {
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: "#fff1f0",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+  },
+
+  textoSair: {
+    color: "#F44336",
+    fontSize: 14,
+    fontWeight: "800",
   },
 
   input: {

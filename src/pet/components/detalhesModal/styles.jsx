@@ -30,9 +30,9 @@ export const styles = StyleSheet.create({
   },
 
   fechar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#f2f2f2",
     alignItems: "center",
     justifyContent: "center",
@@ -77,9 +77,22 @@ export const styles = StyleSheet.create({
   input: {
     backgroundColor: "#f5f5f5",
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#f5f5f5",
     padding: 12,
     fontSize: 14,
     color: "#333",
+  },
+
+  inputErro: {
+    borderColor: "#F44336",
+  },
+
+  erroCampo: {
+    color: "#F44336",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 5,
   },
 
   pickerContainer: {

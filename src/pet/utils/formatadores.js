@@ -1,3 +1,14 @@
+export function formatarHorarioMascara(valor) {
+  // Remove tudo que não é dígito e limita a 4 caracteres
+  const digitos = String(valor ?? "").replace(/\D/g, "").slice(0, 4);
+
+  if (digitos.length === 0) return "";
+  if (digitos.length <= 2) return digitos;
+
+  // A partir de 3 dígitos, insere o ":" automaticamente
+  return `${digitos.slice(0, 2)}:${digitos.slice(2)}`;
+}
+
 export function formatarHorario(valor) {
   const texto = String(valor ?? "").trim().replace("h", ":").replace(".", ":");
 
@@ -52,8 +63,74 @@ export function formatarDataDigitada(valor) {
   return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
 }
 
+export function dataBRParaDate(valor) {
+  const partes = String(valor ?? "").split("/");
+
+  if (partes.length !== 3) {
+    return null;
+  }
+
+  const [dia, mes, ano] = partes.map(Number);
+
+  if (!dia || !mes || !ano || ano < 1900) {
+    return null;
+  }
+
+  const data = new Date(ano, mes - 1, dia);
+
+  if (
+    data.getFullYear() !== ano ||
+    data.getMonth() !== mes - 1 ||
+    data.getDate() !== dia
+  ) {
+    return null;
+  }
+
+  return data;
+}
+
+export function dataValidaBR(valor) {
+  return Boolean(dataBRParaDate(valor));
+}
+
+export function formatarDataBR(data) {
+  if (!(data instanceof Date) || Number.isNaN(data.getTime())) {
+    return "";
+  }
+
+  return data.toLocaleDateString("pt-BR");
+}
+
+export function adicionarDiasDataBR(valor, dias) {
+  const data = dataBRParaDate(valor) ?? new Date();
+  data.setDate(data.getDate() + dias);
+  return formatarDataBR(data);
+}
+
+export function horarioValido(valor) {
+  const texto = String(valor ?? "").trim().replace("h", ":").replace(".", ":");
+  const [horaRaw, minutoRaw = "00"] = texto.split(":");
+
+  if (!/^\d{1,2}$/.test(horaRaw) || !/^\d{1,2}$/.test(minutoRaw)) {
+    return false;
+  }
+
+  const hora = Number(horaRaw);
+  const minuto = Number(minutoRaw);
+
+  return hora >= 0 && hora <= 23 && minuto >= 0 && minuto <= 59;
+}
+
 export function dataHoraParaTempo({ data, horario }) {
-  const [dia, mes, ano] = String(data).split("/").map(Number);
+  const dataValida = dataBRParaDate(data);
+
+  if (!dataValida) {
+    return Number.NaN;
+  }
+
+  const dia = dataValida.getDate();
+  const mes = dataValida.getMonth() + 1;
+  const ano = dataValida.getFullYear();
   const [hora = 0, minuto = 0] = String(formatarHorario(horario)).split(":").map(Number);
   return new Date(ano, mes - 1, dia, hora, minuto).getTime();
 }

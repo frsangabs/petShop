@@ -5,6 +5,58 @@ export const styles = StyleSheet.create({
     padding: 15,
   },
 
+  controleMes: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 12,
+  },
+
+  botaoMes: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e6e6e6",
+  },
+
+  botaoMesTexto: {
+    color: "#333",
+    fontSize: 20,
+    fontWeight: "900",
+  },
+
+  mesCentro: {
+    flex: 1,
+    alignItems: "center",
+  },
+
+  mesTitulo: {
+    color: "#333",
+    fontSize: 17,
+    fontWeight: "800",
+    textTransform: "capitalize",
+  },
+
+  botaoHoje: {
+    minHeight: 36,
+    borderRadius: 18,
+    backgroundColor: "#eef4ff",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    marginTop: 6,
+  },
+
+  botaoHojeTexto: {
+    color: "#2f80ed",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
   card: {
     backgroundColor: "#fff",
     padding: 18,

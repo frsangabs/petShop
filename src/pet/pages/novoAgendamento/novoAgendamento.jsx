@@ -13,12 +13,16 @@ import {
 } from "react-native";
 
 import AppScreen from "../../components/appScreen";
+import DateInput from "../../components/dateInput";
 import Menu from "../../components/navbar";
 import { usePetShop } from "../../context/PetShopContext";
 import {
+  dataValidaBR,
   formatarDataDigitada,
   formatarHorario,
+  formatarHorarioMascara,
   formatarPreco,
+  horarioValido,
 } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
 import { opcoesServicos } from "../../utils/servicos";
@@ -83,36 +87,6 @@ function NovoAgendamento() {
     });
   }
 
-  function dataValida(valor) {
-    const partes = String(valor ?? "").split("/");
-
-    if (partes.length !== 3) {
-      return false;
-    }
-
-    const [dia, mes, ano] = partes.map(Number);
-    const dataTeste = new Date(ano, mes - 1, dia);
-
-    return (
-      dataTeste.getFullYear() === ano &&
-      dataTeste.getMonth() === mes - 1 &&
-      dataTeste.getDate() === dia
-    );
-  }
-
-  function horarioValido(valor) {
-    const texto = String(valor ?? "").trim().replace("h", ":").replace(".", ":");
-    const [horaRaw, minutoRaw = "00"] = texto.split(":");
-
-    if (!/^\d{1,2}$/.test(horaRaw) || !/^\d{1,2}$/.test(minutoRaw)) {
-      return false;
-    }
-
-    const hora = Number(horaRaw);
-    const minuto = Number(minutoRaw);
-    return hora >= 0 && hora <= 23 && minuto >= 0 && minuto <= 59;
-  }
-
   function telefoneValido(valor) {
     const digitos = String(valor ?? "").replace(/\D/g, "");
     return digitos.length >= 10;
@@ -127,7 +101,7 @@ function NovoAgendamento() {
 
     if (!data.trim()) {
       novosErros.data = "Informe a data.";
-    } else if (!dataValida(data)) {
+    } else if (!dataValidaBR(data)) {
       novosErros.data = "Use uma data válida no formato dd/mm/aaaa.";
     }
 
@@ -180,6 +154,24 @@ function NovoAgendamento() {
     limparErro("pet");
     limparErro("dono");
     limparErro("telefone");
+  }
+
+  function voltarParaAgenda() {
+    Alert.alert("Sair sem salvar?", "As informacoes preenchidas nao serao salvas.", [
+      { text: "Continuar editando", style: "cancel" },
+      {
+        text: "Sair",
+        style: "destructive",
+        onPress: () => {
+          if (router.canGoBack?.()) {
+            router.back();
+            return;
+          }
+
+          router.replace("/agendamentos");
+        },
+      },
+    ]);
   }
 
   async function obterOuCriarPetId() {
@@ -265,7 +257,17 @@ function NovoAgendamento() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.card}>
-          <Text style={styles.titulo}>Novo agendamento</Text>
+          <View style={styles.cabecalho}>
+            <Text style={styles.titulo}>Novo agendamento</Text>
+            <TouchableOpacity
+              style={styles.botaoSair}
+              onPress={voltarParaAgenda}
+              accessibilityRole="button"
+              accessibilityLabel="Sair do novo agendamento"
+            >
+              <Text style={styles.textoSair}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
 
           <Text style={styles.label}>Pet</Text>
           <TextInput
@@ -383,32 +385,29 @@ function NovoAgendamento() {
             </View>
           )}
 
-          <TextInput
-            placeholder="Data"
+          <DateInput
+            label="Data"
             value={data}
-            onChangeText={(valor) => {
+            onChange={(valor) => {
               setData(formatarDataDigitada(valor));
               limparErro("data");
             }}
-            style={styles.input}
-            placeholderTextColor="#999"
+            erro={erros.data}
             accessibilityLabel="Data do agendamento"
-            keyboardType="numbers-and-punctuation"
           />
-          {erros.data ? <Text style={styles.erroCampo}>{erros.data}</Text> : null}
 
           <TextInput
             placeholder="Horario"
             value={horario}
             onChangeText={(valor) => {
-              setHorario(valor);
+              setHorario(formatarHorarioMascara(valor));
               limparErro("horario");
             }}
             onBlur={() => setHorario(formatarHorario(horario))}
             style={styles.input}
             placeholderTextColor="#999"
             accessibilityLabel="Horário do agendamento"
-            keyboardType="numbers-and-punctuation"
+            keyboardType="number-pad"
           />
           {erros.horario ? <Text style={styles.erroCampo}>{erros.horario}</Text> : null}
 

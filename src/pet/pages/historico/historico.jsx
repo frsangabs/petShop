@@ -9,9 +9,11 @@ import { usePetShop } from "../../context/PetShopContext";
 import {
   dataHoraParaTempo,
   dataHoraTextoParaTempo,
+  dataValidaBR,
   formatarDataDigitada,
   formatarHorario,
   formatarPreco,
+  horarioValido,
 } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
 import { opcoesServicos } from "../../utils/servicos";
@@ -31,6 +33,7 @@ function Historico() {
     observacoes: "",
     imagemUri: "",
   });
+  const [formErros, setFormErros] = useState({});
   const [busca, setBusca] = useState("");
   const petSelecionado = registroSelecionado
     ? obterPet(registroSelecionado.petId)
@@ -72,6 +75,7 @@ function Historico() {
   function abrirRegistro(registro) {
     setRegistroSelecionado(registro);
     setEditando(false);
+    setFormErros({});
     setForm({
       servico: registro.servico,
       data: registro.data,
@@ -95,10 +99,31 @@ function Historico() {
   function fecharModal() {
     setRegistroSelecionado(null);
     setEditando(false);
+    setFormErros({});
   }
 
   function salvarRegistro() {
     if (!registroSelecionado) {
+      return;
+    }
+
+    const erros = {};
+
+    if (!dataValidaBR(form.data)) {
+      erros.data = "Informe uma data agendada valida.";
+    }
+
+    if (form.concluidoEm && !dataValidaBR(form.concluidoEm)) {
+      erros.concluidoEm = "Informe uma data de conclusao valida.";
+    }
+
+    if (!horarioValido(form.horario)) {
+      erros.horario = "Informe um horario valido.";
+    }
+
+    setFormErros(erros);
+
+    if (Object.keys(erros).length) {
       return;
     }
 
@@ -195,18 +220,27 @@ function Historico() {
           {
             label: "Data agendada",
             valor: form.data,
+            tipo: "date",
+            erro: formErros.data,
             onChangeText: (valor) =>
-              setForm((atual) => ({
-                ...atual,
-                data: formatarDataDigitada(valor),
-              })),
+              {
+                setForm((atual) => ({
+                  ...atual,
+                  data: formatarDataDigitada(valor),
+                }));
+                setFormErros((atuais) => ({ ...atuais, data: "" }));
+              },
             keyboardType: "number-pad",
           },
           {
             label: "Horario",
             valor: form.horario,
+            erro: formErros.horario,
             onChangeText: (valor) =>
-              setForm((atual) => ({ ...atual, horario: valor })),
+              {
+                setForm((atual) => ({ ...atual, horario: valor }));
+                setFormErros((atuais) => ({ ...atuais, horario: "" }));
+              },
             onBlur: () =>
               setForm((atual) => ({
                 ...atual,
@@ -216,11 +250,16 @@ function Historico() {
           {
             label: "Concluido em",
             valor: form.concluidoEm,
+            tipo: "date",
+            erro: formErros.concluidoEm,
             onChangeText: (valor) =>
-              setForm((atual) => ({
-                ...atual,
-                concluidoEm: formatarDataDigitada(valor),
-              })),
+              {
+                setForm((atual) => ({
+                  ...atual,
+                  concluidoEm: formatarDataDigitada(valor),
+                }));
+                setFormErros((atuais) => ({ ...atuais, concluidoEm: "" }));
+              },
             keyboardType: "number-pad",
           },
           {

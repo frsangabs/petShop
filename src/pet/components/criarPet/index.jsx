@@ -24,10 +24,21 @@ function CardCriarPet({
   onEscolherFoto,
   onRemoverFoto,
   onSalvar,
+  onCancelar,
 }) {
   return (
     <View style={styles.card}>
-      <Text style={styles.titulo}>Novo Pet</Text>
+      <View style={styles.cabecalho}>
+        <Text style={styles.titulo}>Novo Pet</Text>
+        <TouchableOpacity
+          style={styles.botaoSair}
+          onPress={onCancelar}
+          accessibilityRole="button"
+          accessibilityLabel="Sair do cadastro de pet"
+        >
+          <Text style={styles.textoSair}>Cancelar</Text>
+        </TouchableOpacity>
+      </View>
 
       <TextInput
         placeholder="Nome do pet"

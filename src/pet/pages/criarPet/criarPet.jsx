@@ -106,6 +106,24 @@ function CriarPet() {
     router.replace("/pets");
   }
 
+  function cancelarCadastro() {
+    Alert.alert("Sair sem salvar?", "As informacoes preenchidas nao serao salvas.", [
+      { text: "Continuar editando", style: "cancel" },
+      {
+        text: "Sair",
+        style: "destructive",
+        onPress: () => {
+          if (router.canGoBack?.()) {
+            router.back();
+            return;
+          }
+
+          router.replace("/pets");
+        },
+      },
+    ]);
+  }
+
   return (
     <AppScreen style={styles.container} avoidKeyboard>
       <Menu />
@@ -154,6 +172,7 @@ function CriarPet() {
           onEscolherFoto={escolherFoto}
           onRemoverFoto={() => setFoto("")}
           onSalvar={salvarPet}
+          onCancelar={cancelarCadastro}
         />
       </ScrollView>
     </AppScreen>

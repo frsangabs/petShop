@@ -22,7 +22,7 @@ function Menu() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { backendOnline, carregandoDados, sincronizando } = usePetShop();
+  const { backendOnline, carregandoDados, sincronizando, alteracoesPendentes } = usePetShop();
   const [maisAberto, setMaisAberto] = useState(false);
   const maisAtivo = itensMais.some((item) => pathname === item.path);
 
@@ -39,6 +39,8 @@ function Menu() {
     ? "Carregando dados"
     : sincronizando
       ? "Salvando alterações"
+      : alteracoesPendentes
+        ? `${alteracoesPendentes} alteracao${alteracoesPendentes > 1 ? "es" : ""} salva${alteracoesPendentes > 1 ? "s" : ""} neste aparelho`
       : backendOnline
         ? ""
         : "Sem conexão com os outros aparelhos";

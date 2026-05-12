@@ -11,6 +11,7 @@ import { dadosIniciais } from "../data/dadosIniciais";
 const PetShopContext = createContext(null);
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3333";
 const STORAGE_KEY = "petshop-mvp-dados-v2";
+const PENDING_STORAGE_KEY = "petshop-mvp-pendencias-v1";
 
 function novoId(prefixo) {
   return `${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -49,6 +50,35 @@ async function salvarDadosLocais(dados) {
     await AsyncStorage.setItem(STORAGE_KEY, serializado);
   } catch {
     // Persistência local é fallback; falhas não devem bloquear o uso.
+  }
+}
+
+async function carregarPendenciasLocais() {
+  try {
+    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
+      const salvo = localStorage.getItem(PENDING_STORAGE_KEY);
+      return salvo ? JSON.parse(salvo) : [];
+    }
+
+    const salvo = await AsyncStorage.getItem(PENDING_STORAGE_KEY);
+    return salvo ? JSON.parse(salvo) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function salvarPendenciasLocais(pendencias) {
+  try {
+    const serializado = JSON.stringify(pendencias);
+
+    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
+      localStorage.setItem(PENDING_STORAGE_KEY, serializado);
+      return;
+    }
+
+    await AsyncStorage.setItem(PENDING_STORAGE_KEY, serializado);
+  } catch {
+    // Se o aparelho negar a gravacao, a tela continua funcionando com os dados em memoria.
   }
 }
 
@@ -93,6 +123,20 @@ async function chamarApi(path, options = {}) {
   return resposta.json();
 }
 
+async function enviarPendencias(pendencias) {
+  let dadosAtualizados = null;
+
+  for (const pendencia of pendencias) {
+    const resultado = await chamarApi(pendencia.path, pendencia.options);
+
+    if (resultado.dados) {
+      dadosAtualizados = resultado.dados;
+    }
+  }
+
+  return dadosAtualizados ?? chamarApi("/dados");
+}
+
 export function PetShopProvider({ children }) {
   const [dadosSalvos] = useState(dadosPadrao);
   const [donos, setDonos] = useState(dadosSalvos.donos ?? []);
@@ -105,6 +149,7 @@ export function PetShopProvider({ children }) {
   const [dadosCarregados, setDadosCarregados] = useState(false);
   const [sincronizando, setSincronizando] = useState(false);
   const [ultimoErroSync, setUltimoErroSync] = useState("");
+  const [pendenciasSync, setPendenciasSync] = useState([]);
 
   function aplicarDados(dados) {
     setDonos(dados.donos ?? []);
@@ -118,23 +163,33 @@ export function PetShopProvider({ children }) {
     let ativo = true;
 
     async function inicializar() {
-      const locais = await carregarDadosLocais();
+      const [locais, pendentes] = await Promise.all([
+        carregarDadosLocais(),
+        carregarPendenciasLocais(),
+      ]);
 
       if (!ativo) {
         return;
       }
 
       aplicarDados(locais);
+      setPendenciasSync(pendentes);
       setDadosCarregados(true);
 
       try {
-        const dados = await chamarApi("/dados");
+        const dados = pendentes.length
+          ? await enviarPendencias(pendentes)
+          : await chamarApi("/dados");
 
         if (!ativo) {
           return;
         }
 
         aplicarDados(dados);
+        if (pendentes.length) {
+          setPendenciasSync([]);
+          await salvarPendenciasLocais([]);
+        }
         setBackendOnline(true);
         setUltimoErroSync("");
       } catch (error) {
@@ -166,10 +221,75 @@ export function PetShopProvider({ children }) {
     salvarDadosLocais({ donos, pets, agendamentos, historico, pacotes });
   }, [dadosCarregados, donos, pets, agendamentos, historico, pacotes]);
 
+  useEffect(() => {
+    if (!dadosCarregados) {
+      return;
+    }
+
+    salvarPendenciasLocais(pendenciasSync);
+  }, [dadosCarregados, pendenciasSync]);
+
+  useEffect(() => {
+    if (!dadosCarregados || carregandoDados || !pendenciasSync.length) {
+      return undefined;
+    }
+
+    let ativo = true;
+    let enviando = false;
+
+    async function tentarEnviar() {
+      if (enviando) {
+        return;
+      }
+
+      enviando = true;
+      setSincronizando(true);
+
+      try {
+        const dados = await enviarPendencias(pendenciasSync);
+
+        if (!ativo) {
+          return;
+        }
+
+        aplicarDados(dados);
+        setPendenciasSync([]);
+        setBackendOnline(true);
+        setUltimoErroSync("");
+      } catch (error) {
+        if (!ativo) {
+          return;
+        }
+
+        setBackendOnline(false);
+        setUltimoErroSync(mensagemErroApi(error));
+      } finally {
+        enviando = false;
+
+        if (ativo) {
+          setSincronizando(false);
+        }
+      }
+    }
+
+    const timer = setInterval(tentarEnviar, 8000);
+
+    return () => {
+      ativo = false;
+      clearInterval(timer);
+    };
+  }, [carregandoDados, dadosCarregados, pendenciasSync]);
+
   async function sincronizar(path, options, fallback) {
     setSincronizando(true);
 
     try {
+      if (pendenciasSync.length) {
+        const dadosPendentes = await enviarPendencias(pendenciasSync);
+        aplicarDados(dadosPendentes);
+        setPendenciasSync([]);
+      }
+
       const resultado = await chamarApi(path, options);
       if (resultado.dados) {
         aplicarDados(resultado.dados);
@@ -178,9 +298,18 @@ export function PetShopProvider({ children }) {
       setUltimoErroSync("");
       return { ...resultado, offline: false };
     } catch (error) {
+      const resultadoLocal = fallback?.();
+      const pendencia = {
+        id: novoId("sync"),
+        path,
+        options,
+        criadoEm: new Date().toISOString(),
+      };
+
+      setPendenciasSync((atuais) => [...atuais, pendencia]);
       setBackendOnline(false);
       setUltimoErroSync(mensagemErroApi(error));
-      return normalizarRespostaLocal(fallback?.(), error);
+      return normalizarRespostaLocal(resultadoLocal, error);
     } finally {
       setSincronizando(false);
     }
@@ -193,18 +322,29 @@ export function PetShopProvider({ children }) {
   }
 
   function criarPet({ nome, raca, porte, dono, telefone, foto, donoId }) {
+    const donoExistente = donoId
+      ? donos.find((item) => item.id === donoId)
+      : buscarDonoPorTelefone(telefone);
+    const novoDonoId = donoExistente?.id ?? novoId("dono");
+    const petId = novoId("pet");
+
     return sincronizar(
       "/pets",
       {
         method: "POST",
-        body: JSON.stringify({ nome, raca, porte, dono, telefone, foto, donoId }),
+        body: JSON.stringify({
+          id: petId,
+          nome,
+          raca,
+          porte,
+          dono,
+          telefone,
+          foto,
+          donoId,
+          novoDonoId,
+        }),
       },
       () => {
-        const donoExistente = donoId
-          ? donos.find((item) => item.id === donoId)
-          : buscarDonoPorTelefone(telefone);
-        const novoDonoId = donoExistente?.id ?? novoId("dono");
-
         if (!donoExistente) {
           setDonos((atuais) => [
             ...atuais,
@@ -218,7 +358,7 @@ export function PetShopProvider({ children }) {
         }
 
         const pet = {
-          id: novoId("pet"),
+          id: petId,
           nome: nome.trim(),
           raca: raca.trim(),
           porte,
@@ -233,12 +373,14 @@ export function PetShopProvider({ children }) {
   }
 
   function criarAgendamento(dados) {
+    const agendamentoId = novoId("ag");
+
     return sincronizar(
       "/agendamentos",
-      { method: "POST", body: JSON.stringify(dados) },
+      { method: "POST", body: JSON.stringify({ ...dados, id: agendamentoId }) },
       () => {
         const agendamento = {
-          id: novoId("ag"),
+          id: agendamentoId,
           petId: dados.petId,
           servico: dados.servico.trim(),
           data: dados.data.trim(),
@@ -260,12 +402,24 @@ export function PetShopProvider({ children }) {
   }
 
   function criarPacoteBanhos(dados) {
+    const quantidade = Math.min(Math.max(Number(dados.quantidadeBanhos), 1), 4);
+    const pacoteId = novoId("pacote");
+    const agendamentoIds = Array.from({ length: quantidade }, () => novoId("ag"));
+    const criadoEm = new Date().toISOString();
+
     return sincronizar(
       "/pacotes",
-      { method: "POST", body: JSON.stringify(dados) },
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...dados,
+          quantidadeBanhos: quantidade,
+          id: pacoteId,
+          agendamentoIds,
+          criadoEm,
+        }),
+      },
       () => {
-        const quantidade = Math.min(Math.max(Number(dados.quantidadeBanhos), 1), 4);
-        const pacoteId = novoId("pacote");
         const pacote = {
           id: pacoteId,
           petId: dados.petId,
@@ -276,10 +430,10 @@ export function PetShopProvider({ children }) {
           bonusServico: dados.bonusServico ?? "Tosa Higiênica",
           bonusConcluido: false,
           bonusConcluidoEm: "",
-          criadoEm: new Date().toISOString(),
+          criadoEm,
         };
         const novosAgendamentos = Array.from({ length: quantidade }, (_, index) => ({
-          id: novoId("ag"),
+          id: agendamentoIds[index],
           petId: dados.petId,
           servico: "Banho",
           data: adicionarDias(dados.data, index * 7),
@@ -470,6 +624,7 @@ export function PetShopProvider({ children }) {
     carregandoDados,
     sincronizando,
     ultimoErroSync,
+    alteracoesPendentes: pendenciasSync.length,
     apiUrl: API_URL,
     criarPet,
     criarAgendamento,
