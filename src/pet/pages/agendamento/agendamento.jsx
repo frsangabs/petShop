@@ -17,6 +17,7 @@ import {
   horarioValido,
 } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
+import { confirmarDescarteEdicao } from "../../utils/confirmarFechar";
 import { textoIndicadorPacote } from "../../utils/indicadorPacote";
 import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
@@ -153,6 +154,30 @@ function Agendamentos() {
         },
       ]
     );
+  }
+
+  function restaurarFormularioAgendamento() {
+    if (!agendamentoSelecionado) {
+      return;
+    }
+
+    setFormErros({});
+    setForm({
+      servico: agendamentoSelecionado.servico,
+      data: agendamentoSelecionado.data,
+      horario: agendamentoSelecionado.horario,
+      preco: agendamentoSelecionado.preco,
+      lamina: agendamentoSelecionado.lamina,
+      observacoes: agendamentoSelecionado.observacoes,
+      imagemUri: agendamentoSelecionado.imagemUri ?? "",
+    });
+  }
+
+  function cancelarEdicao() {
+    confirmarDescarteEdicao(() => {
+      restaurarFormularioAgendamento();
+      setEditando(false);
+    });
   }
 
   function fecharModal() {
@@ -308,7 +333,7 @@ function Agendamentos() {
         ]}
         editando={editando}
         onEditar={() => setEditando(true)}
-        onCancelarEdicao={() => setEditando(false)}
+        onCancelarEdicao={cancelarEdicao}
         onSalvar={salvarAgendamento}
         campos={[
           {

@@ -40,7 +40,7 @@ function Menu() {
     : sincronizando
       ? "Salvando alterações"
       : alteracoesPendentes
-        ? `${alteracoesPendentes} alteracao${alteracoesPendentes > 1 ? "es" : ""} salva${alteracoesPendentes > 1 ? "s" : ""} neste aparelho`
+        ? `${alteracoesPendentes} ${alteracoesPendentes > 1 ? "alterações" : "alteração"} salva${alteracoesPendentes > 1 ? "s" : ""} neste aparelho`
       : backendOnline
         ? ""
         : "Sem conexão com os outros aparelhos";

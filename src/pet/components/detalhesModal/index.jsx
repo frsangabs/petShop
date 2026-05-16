@@ -17,12 +17,21 @@ function DetalhesModal({
   extra,
   editExtra,
 }) {
+  function solicitarFechar() {
+    if (editando && onCancelarEdicao) {
+      onCancelarEdicao();
+      return;
+    }
+
+    onFechar?.();
+  }
+
   return (
     <Modal
       visible={visivel}
       transparent
       animationType="fade"
-      onRequestClose={onFechar}
+      onRequestClose={solicitarFechar}
       accessibilityViewIsModal
     >
       <View style={styles.overlay}>
@@ -44,9 +53,9 @@ function DetalhesModal({
             ) : null}
             <TouchableOpacity
               style={styles.fechar}
-              onPress={onFechar}
+              onPress={solicitarFechar}
               accessibilityRole="button"
-              accessibilityLabel="Fechar detalhes"
+              accessibilityLabel={editando ? "Cancelar edição" : "Fechar detalhes"}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={styles.fecharTexto}>X</Text>

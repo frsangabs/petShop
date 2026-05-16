@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FlatList, Text } from "react-native";
+import { confirmarDescarteEdicao } from "../../utils/confirmarFechar";
 import AppScreen from "../../components/appScreen";
 import CardDono from "../../components/cardDonos";
 import DetalhesModal from "../../components/detalhesModal";
@@ -38,6 +39,25 @@ function Donos() {
       nome: dono.nome,
       telefone: dono.telefone,
       busca: dono.busca ? "sim" : "nao",
+    });
+  }
+
+  function restaurarFormularioDono() {
+    if (!donoSelecionado) {
+      return;
+    }
+
+    setForm({
+      nome: donoSelecionado.nome,
+      telefone: donoSelecionado.telefone,
+      busca: donoSelecionado.busca ? "sim" : "nao",
+    });
+  }
+
+  function cancelarEdicao() {
+    confirmarDescarteEdicao(() => {
+      restaurarFormularioDono();
+      setEditando(false);
     });
   }
 
@@ -114,7 +134,7 @@ function Donos() {
         ]}
         editando={editando}
         onEditar={() => setEditando(true)}
-        onCancelarEdicao={() => setEditando(false)}
+        onCancelarEdicao={cancelarEdicao}
         onSalvar={salvarDono}
         campos={[
           {

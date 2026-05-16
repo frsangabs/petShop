@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView } from "react-native";
+import { confirmarSairSemSalvar } from "../../utils/confirmarFechar";
 import AppScreen from "../../components/appScreen";
 import CardCriarPet from "../../components/criarPet";
 import Menu from "../../components/navbar";
@@ -106,22 +107,17 @@ function CriarPet() {
     router.replace("/pets");
   }
 
-  function cancelarCadastro() {
-    Alert.alert("Sair sem salvar?", "As informacoes preenchidas nao serao salvas.", [
-      { text: "Continuar editando", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: () => {
-          if (router.canGoBack?.()) {
-            router.back();
-            return;
-          }
+  function sairDoCadastro() {
+    if (router.canGoBack?.()) {
+      router.back();
+      return;
+    }
 
-          router.replace("/pets");
-        },
-      },
-    ]);
+    router.replace("/pets");
+  }
+
+  function cancelarCadastro() {
+    confirmarSairSemSalvar(sairDoCadastro);
   }
 
   return (

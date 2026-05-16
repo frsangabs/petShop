@@ -24,6 +24,7 @@ import {
   formatarPreco,
   horarioValido,
 } from "../../utils/formatadores";
+import { confirmarSairSemSalvar } from "../../utils/confirmarFechar";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
 import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
@@ -156,22 +157,17 @@ function NovoAgendamento() {
     limparErro("telefone");
   }
 
-  function voltarParaAgenda() {
-    Alert.alert("Sair sem salvar?", "As informacoes preenchidas nao serao salvas.", [
-      { text: "Continuar editando", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: () => {
-          if (router.canGoBack?.()) {
-            router.back();
-            return;
-          }
+  function sairDoFormulario() {
+    if (router.canGoBack?.()) {
+      router.back();
+      return;
+    }
 
-          router.replace("/agendamentos");
-        },
-      },
-    ]);
+    router.replace("/agendamentos");
+  }
+
+  function voltarParaAgenda() {
+    confirmarSairSemSalvar(sairDoFormulario);
   }
 
   async function obterOuCriarPetId() {
@@ -259,14 +255,25 @@ function NovoAgendamento() {
         <View style={styles.card}>
           <View style={styles.cabecalho}>
             <Text style={styles.titulo}>Novo agendamento</Text>
-            <TouchableOpacity
-              style={styles.botaoSair}
-              onPress={voltarParaAgenda}
-              accessibilityRole="button"
-              accessibilityLabel="Sair do novo agendamento"
-            >
-              <Text style={styles.textoSair}>Cancelar</Text>
-            </TouchableOpacity>
+            <View style={styles.cabecalhoAcoes}>
+              <TouchableOpacity
+                style={styles.botaoFechar}
+                onPress={voltarParaAgenda}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar novo agendamento"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.botaoFecharTexto}>X</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.botaoSair}
+                onPress={voltarParaAgenda}
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar novo agendamento"
+              >
+                <Text style={styles.textoSair}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <Text style={styles.label}>Pet</Text>

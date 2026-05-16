@@ -30,14 +30,25 @@ function CardCriarPet({
     <View style={styles.card}>
       <View style={styles.cabecalho}>
         <Text style={styles.titulo}>Novo Pet</Text>
-        <TouchableOpacity
-          style={styles.botaoSair}
-          onPress={onCancelar}
-          accessibilityRole="button"
-          accessibilityLabel="Sair do cadastro de pet"
-        >
-          <Text style={styles.textoSair}>Cancelar</Text>
-        </TouchableOpacity>
+        <View style={styles.cabecalhoAcoes}>
+          <TouchableOpacity
+            style={styles.botaoFechar}
+            onPress={onCancelar}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar cadastro de pet"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.botaoFecharTexto}>X</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.botaoSair}
+            onPress={onCancelar}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar cadastro de pet"
+          >
+            <Text style={styles.textoSair}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <TextInput

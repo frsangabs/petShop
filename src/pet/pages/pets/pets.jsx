@@ -8,6 +8,7 @@ import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
 import { dataHoraParaTempo } from "../../utils/formatadores";
+import { confirmarDescarteEdicao } from "../../utils/confirmarFechar";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
 import { styles } from "./styles";
 
@@ -70,6 +71,29 @@ function Pets() {
     if (uri) {
       setForm((atual) => ({ ...atual, foto: uri }));
     }
+  }
+
+  function restaurarFormularioPet() {
+    if (!petSelecionado) {
+      return;
+    }
+
+    const dono = obterDono(petSelecionado.donoId);
+    setForm({
+      nome: petSelecionado.nome,
+      raca: petSelecionado.raca,
+      porte: petSelecionado.porte,
+      dono: dono?.nome ?? "",
+      telefone: dono?.telefone ?? "",
+      foto: petSelecionado.foto ?? "",
+    });
+  }
+
+  function cancelarEdicao() {
+    confirmarDescarteEdicao(() => {
+      restaurarFormularioPet();
+      setEditando(false);
+    });
   }
 
   function fecharModal() {
@@ -190,7 +214,7 @@ function Pets() {
         ]}
         editando={editando}
         onEditar={() => setEditando(true)}
-        onCancelarEdicao={() => setEditando(false)}
+        onCancelarEdicao={cancelarEdicao}
         onSalvar={salvarPet}
         campos={[
           {

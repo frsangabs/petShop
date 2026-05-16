@@ -34,6 +34,27 @@ export const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
+  cabecalhoAcoes: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  botaoFechar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#f2f2f2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  botaoFecharTexto: {
+    color: "#333",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
   botaoSair: {
     minHeight: 44,
     borderRadius: 10,

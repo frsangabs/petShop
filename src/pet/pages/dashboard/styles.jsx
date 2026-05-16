@@ -107,7 +107,10 @@ export const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 8,
     paddingVertical: 10,
+    paddingHorizontal: 4,
     alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
   },
 
   tabAtiva: {
@@ -118,6 +121,7 @@ export const styles = StyleSheet.create({
     color: "#667",
     fontSize: 13,
     fontWeight: "700",
+    textAlign: "center",
   },
 
   tabTextoAtivo: {
