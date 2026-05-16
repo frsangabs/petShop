@@ -26,6 +26,32 @@ export const styles = StyleSheet.create({
     gap: 10,
   },
 
+  linhaIndicador: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  etiqueta: {
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    fontSize: 11,
+    fontWeight: "800",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    overflow: "hidden",
+  },
+
+  etiquetaAvulso: {
+    backgroundColor: "#eceff1",
+    color: "#546e7a",
+  },
+
+  etiquetaPacote: {
+    backgroundColor: "#e8f5e9",
+    color: "#2e7d32",
+  },
+
   nome: {
     flex: 1,
     fontSize: 18,

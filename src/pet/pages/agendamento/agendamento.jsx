@@ -17,6 +17,7 @@ import {
   horarioValido,
 } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
+import { textoIndicadorPacote } from "../../utils/indicadorPacote";
 import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
 
@@ -260,6 +261,8 @@ function Agendamentos() {
               data={`${item.data} - ${item.horario}`}
               pago={item.pago}
               porte={pet?.porte ?? "Pequeno"}
+              rotuloTipoServico={textoIndicadorPacote(item)}
+              ehPacote={Boolean(item.pacoteId)}
 
               onPress={() => abrirAgendamento(item)}
               onTogglePago={() => alternarPagamento(item.id)}
@@ -281,6 +284,12 @@ function Agendamentos() {
           { label: "Raca", valor: petSelecionado?.raca },
           { label: "Porte", valor: petSelecionado?.porte },
           { label: "Servico", valor: agendamentoSelecionado?.servico },
+          {
+            label: "Tipo",
+            valor: agendamentoSelecionado
+              ? textoIndicadorPacote(agendamentoSelecionado)
+              : "",
+          },
           {
             label: "Data e horario",
             valor: agendamentoSelecionado

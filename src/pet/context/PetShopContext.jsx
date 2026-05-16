@@ -1,17 +1,22 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useContext, useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 import {
   formatarDataHoraAtual,
   formatarHorario,
   formatarPreco,
 } from "../utils/formatadores";
 import { dadosIniciais } from "../data/dadosIniciais";
+import {
+  carregarDadosLocais,
+  carregarPendenciasLocais,
+  montarSnapshot,
+  salvarDadosLocais,
+  salvarPendenciasLocais,
+} from "../storage/persistenciaLocal";
 
 const PetShopContext = createContext(null);
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3333";
-const STORAGE_KEY = "petshop-mvp-dados-v2";
-const PENDING_STORAGE_KEY = "petshop-mvp-pendencias-v1";
+const API_TIMEOUT_MS = 8000;
 
 function novoId(prefixo) {
   return `${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -24,62 +29,24 @@ function adicionarDias(dataBR, dias) {
   return data.toLocaleDateString("pt-BR");
 }
 
-async function carregarDadosLocais() {
-  try {
-    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
-      const salvo = localStorage.getItem(STORAGE_KEY);
-      return salvo ? JSON.parse(salvo) : dadosIniciais;
-    }
-
-    const salvo = await AsyncStorage.getItem(STORAGE_KEY);
-    return salvo ? JSON.parse(salvo) : dadosIniciais;
-  } catch {
-    return dadosIniciais;
+function normalizarDadosResposta(resposta) {
+  if (!resposta || typeof resposta !== "object") {
+    return null;
   }
-}
 
-async function salvarDadosLocais(dados) {
-  try {
-    const serializado = JSON.stringify(dados);
-
-    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, serializado);
-      return;
-    }
-
-    await AsyncStorage.setItem(STORAGE_KEY, serializado);
-  } catch {
-    // Persistência local é fallback; falhas não devem bloquear o uso.
+  if (resposta.dados && typeof resposta.dados === "object") {
+    return montarSnapshot(resposta.dados);
   }
-}
 
-async function carregarPendenciasLocais() {
-  try {
-    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
-      const salvo = localStorage.getItem(PENDING_STORAGE_KEY);
-      return salvo ? JSON.parse(salvo) : [];
-    }
-
-    const salvo = await AsyncStorage.getItem(PENDING_STORAGE_KEY);
-    return salvo ? JSON.parse(salvo) : [];
-  } catch {
-    return [];
+  if (
+    Array.isArray(resposta.donos) ||
+    Array.isArray(resposta.pets) ||
+    Array.isArray(resposta.agendamentos)
+  ) {
+    return montarSnapshot(resposta);
   }
-}
 
-async function salvarPendenciasLocais(pendencias) {
-  try {
-    const serializado = JSON.stringify(pendencias);
-
-    if (Platform.OS === "web" && typeof localStorage !== "undefined") {
-      localStorage.setItem(PENDING_STORAGE_KEY, serializado);
-      return;
-    }
-
-    await AsyncStorage.setItem(PENDING_STORAGE_KEY, serializado);
-  } catch {
-    // Se o aparelho negar a gravacao, a tela continua funcionando com os dados em memoria.
-  }
+  return null;
 }
 
 function mensagemErroApi(error) {
@@ -111,16 +78,24 @@ function dadosPadrao() {
 }
 
 async function chamarApi(path, options = {}) {
-  const resposta = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
-  if (!resposta.ok) {
-    throw new Error("API indisponível");
+  try {
+    const resposta = await fetch(`${API_URL}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+      signal: controller.signal,
+    });
+
+    if (!resposta.ok) {
+      throw new Error("API indisponível");
+    }
+
+    return resposta.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return resposta.json();
 }
 
 async function enviarPendencias(pendencias) {
@@ -128,36 +103,52 @@ async function enviarPendencias(pendencias) {
 
   for (const pendencia of pendencias) {
     const resultado = await chamarApi(pendencia.path, pendencia.options);
+    const normalizado = normalizarDadosResposta(resultado);
 
-    if (resultado.dados) {
-      dadosAtualizados = resultado.dados;
+    if (normalizado) {
+      dadosAtualizados = normalizado;
     }
   }
 
-  return dadosAtualizados ?? chamarApi("/dados");
+  if (dadosAtualizados) {
+    return dadosAtualizados;
+  }
+
+  return normalizarDadosResposta(await chamarApi("/dados"));
 }
 
 export function PetShopProvider({ children }) {
-  const [dadosSalvos] = useState(dadosPadrao);
-  const [donos, setDonos] = useState(dadosSalvos.donos ?? []);
-  const [pets, setPets] = useState(dadosSalvos.pets ?? []);
-  const [agendamentos, setAgendamentos] = useState(dadosSalvos.agendamentos ?? []);
-  const [historico, setHistorico] = useState(dadosSalvos.historico ?? []);
-  const [pacotes, setPacotes] = useState(dadosSalvos.pacotes ?? []);
+  const [donos, setDonos] = useState([]);
+  const [pets, setPets] = useState([]);
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [historico, setHistorico] = useState([]);
+  const [pacotes, setPacotes] = useState([]);
   const [backendOnline, setBackendOnline] = useState(false);
   const [carregandoDados, setCarregandoDados] = useState(true);
   const [dadosCarregados, setDadosCarregados] = useState(false);
   const [sincronizando, setSincronizando] = useState(false);
   const [ultimoErroSync, setUltimoErroSync] = useState("");
   const [pendenciasSync, setPendenciasSync] = useState([]);
+  const estadoRef = useRef({ donos: [], pets: [], agendamentos: [], historico: [], pacotes: [] });
 
   function aplicarDados(dados) {
-    setDonos(dados.donos ?? []);
-    setPets(dados.pets ?? []);
-    setAgendamentos(dados.agendamentos ?? []);
-    setHistorico(dados.historico ?? []);
-    setPacotes(dados.pacotes ?? []);
+    const snapshot = montarSnapshot(dados);
+    estadoRef.current = snapshot;
+    setDonos(snapshot.donos);
+    setPets(snapshot.pets);
+    setAgendamentos(snapshot.agendamentos);
+    setHistorico(snapshot.historico);
+    setPacotes(snapshot.pacotes);
   }
+
+  const persistirEstadoAtual = useCallback(async (snapshot) => {
+    const dados = snapshot ?? estadoRef.current;
+    await salvarDadosLocais(dados);
+  }, []);
+
+  useEffect(() => {
+    estadoRef.current = { donos, pets, agendamentos, historico, pacotes };
+  }, [donos, pets, agendamentos, historico, pacotes]);
 
   useEffect(() => {
     let ativo = true;
@@ -172,24 +163,52 @@ export function PetShopProvider({ children }) {
         return;
       }
 
-      aplicarDados(locais);
+      const primeiroUso = locais === null;
+      const dadosInicio = locais ?? dadosPadrao();
+      aplicarDados(dadosInicio);
       setPendenciasSync(pendentes);
       setDadosCarregados(true);
+      setCarregandoDados(false);
+
+      if (primeiroUso) {
+        await salvarDadosLocais(dadosInicio);
+      }
 
       try {
-        const dados = pendentes.length
-          ? await enviarPendencias(pendentes)
-          : await chamarApi("/dados");
+        if (pendentes.length > 0) {
+          const dadosServidor = await enviarPendencias(pendentes);
+
+          if (!ativo) {
+            return;
+          }
+
+          if (dadosServidor) {
+            aplicarDados(dadosServidor);
+            await salvarDadosLocais(dadosServidor);
+          }
+
+          setPendenciasSync([]);
+          await salvarPendenciasLocais([]);
+        } else if (primeiroUso) {
+          const resposta = await chamarApi("/dados");
+          const dadosServidor = normalizarDadosResposta(resposta);
+
+          if (!ativo) {
+            return;
+          }
+
+          if (dadosServidor) {
+            aplicarDados(dadosServidor);
+            await salvarDadosLocais(dadosServidor);
+          }
+        } else {
+          await chamarApi("/health");
+        }
 
         if (!ativo) {
           return;
         }
 
-        aplicarDados(dados);
-        if (pendentes.length) {
-          setPendenciasSync([]);
-          await salvarPendenciasLocais([]);
-        }
         setBackendOnline(true);
         setUltimoErroSync("");
       } catch (error) {
@@ -199,10 +218,6 @@ export function PetShopProvider({ children }) {
 
         setBackendOnline(false);
         setUltimoErroSync(mensagemErroApi(error));
-      } finally {
-        if (ativo) {
-          setCarregandoDados(false);
-        }
       }
     }
 
@@ -215,11 +230,36 @@ export function PetShopProvider({ children }) {
 
   useEffect(() => {
     if (!dadosCarregados) {
-      return;
+      return undefined;
     }
 
-    salvarDadosLocais({ donos, pets, agendamentos, historico, pacotes });
-  }, [dadosCarregados, donos, pets, agendamentos, historico, pacotes]);
+    const timer = setTimeout(() => {
+      persistirEstadoAtual({
+        donos,
+        pets,
+        agendamentos,
+        historico,
+        pacotes,
+      });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [dadosCarregados, donos, pets, agendamentos, historico, pacotes, persistirEstadoAtual]);
+
+  useEffect(() => {
+    if (!dadosCarregados) {
+      return undefined;
+    }
+
+    const subscription = AppState.addEventListener("change", (estadoApp) => {
+      if (estadoApp === "background" || estadoApp === "inactive") {
+        persistirEstadoAtual(estadoRef.current);
+        salvarPendenciasLocais(pendenciasSync);
+      }
+    });
+
+    return () => subscription.remove();
+  }, [dadosCarregados, pendenciasSync, persistirEstadoAtual]);
 
   useEffect(() => {
     if (!dadosCarregados) {
@@ -252,8 +292,13 @@ export function PetShopProvider({ children }) {
           return;
         }
 
-        aplicarDados(dados);
+        if (dados) {
+          aplicarDados(dados);
+          await salvarDadosLocais(dados);
+        }
+
         setPendenciasSync([]);
+        await salvarPendenciasLocais([]);
         setBackendOnline(true);
         setUltimoErroSync("");
       } catch (error) {
@@ -286,14 +331,24 @@ export function PetShopProvider({ children }) {
     try {
       if (pendenciasSync.length) {
         const dadosPendentes = await enviarPendencias(pendenciasSync);
-        aplicarDados(dadosPendentes);
+
+        if (dadosPendentes) {
+          aplicarDados(dadosPendentes);
+          await salvarDadosLocais(dadosPendentes);
+        }
+
         setPendenciasSync([]);
+        await salvarPendenciasLocais([]);
       }
 
       const resultado = await chamarApi(path, options);
-      if (resultado.dados) {
-        aplicarDados(resultado.dados);
+      const dadosServidor = normalizarDadosResposta(resultado);
+
+      if (dadosServidor) {
+        aplicarDados(dadosServidor);
+        await salvarDadosLocais(dadosServidor);
       }
+
       setBackendOnline(true);
       setUltimoErroSync("");
       return { ...resultado, offline: false };
@@ -306,9 +361,16 @@ export function PetShopProvider({ children }) {
         criadoEm: new Date().toISOString(),
       };
 
-      setPendenciasSync((atuais) => [...atuais, pendencia]);
+      setPendenciasSync((atuais) => {
+        const proximas = [...atuais, pendencia];
+        void salvarPendenciasLocais(proximas);
+        return proximas;
+      });
       setBackendOnline(false);
       setUltimoErroSync(mensagemErroApi(error));
+      setTimeout(() => {
+        persistirEstadoAtual(estadoRef.current);
+      }, 100);
       return normalizarRespostaLocal(resultadoLocal, error);
     } finally {
       setSincronizando(false);

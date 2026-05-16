@@ -19,7 +19,39 @@ export const styles = StyleSheet.create({
   topo: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+
+  topoEsquerda: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  linhaIndicador: {
+    marginTop: 6,
+    flexDirection: "row",
     alignItems: "center",
+  },
+
+  etiqueta: {
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    fontSize: 11,
+    fontWeight: "800",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    overflow: "hidden",
+  },
+
+  etiquetaAvulso: {
+    backgroundColor: "#eceff1",
+    color: "#546e7a",
+  },
+
+  etiquetaPacote: {
+    backgroundColor: "#e8f5e9",
+    color: "#2e7d32",
   },
 
   nome: {

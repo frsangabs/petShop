@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Image, SectionList, Text, TouchableOpacity, View } from "react-native";
 import AppScreen from "../../components/appScreen";
 import CardHistorico from "../../components/cardHistorico";
 import DetalhesModal from "../../components/detalhesModal";
@@ -7,6 +7,7 @@ import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
 import {
+  dataBRParaDate,
   dataHoraParaTempo,
   dataHoraTextoParaTempo,
   dataValidaBR,
@@ -16,8 +17,42 @@ import {
   horarioValido,
 } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
+import { textoIndicadorPacote } from "../../utils/indicadorPacote";
 import { opcoesServicos } from "../../utils/servicos";
 import { styles } from "./styles";
+
+function tituloDiaServico(dataBR) {
+  const data = dataBRParaDate(dataBR);
+
+  if (!data) {
+    return dataBR;
+  }
+
+  const semana = data.toLocaleDateString("pt-BR", { weekday: "long" });
+  return `${semana}, ${dataBR}`;
+}
+
+function agruparHistoricoPorDia(registros) {
+  const porDia = new Map();
+
+  for (const registro of registros) {
+    const dia = registro.data?.trim() || "Sem data";
+    const lista = porDia.get(dia) ?? [];
+    lista.push(registro);
+    porDia.set(dia, lista);
+  }
+
+  return Array.from(porDia.entries())
+    .sort(
+      (a, b) =>
+        dataHoraParaTempo({ data: b[0], horario: "00:00" }) -
+        dataHoraParaTempo({ data: a[0], horario: "00:00" })
+    )
+    .map(([dia, itens]) => ({
+      title: tituloDiaServico(dia),
+      data: itens,
+    }));
+}
 
 function Historico() {
   const { historico, obterPet, obterDono, atualizarHistorico, carregandoDados } = usePetShop();
@@ -71,6 +106,11 @@ function Historico() {
 
       return concluidoB - concluidoA;
     });
+
+  const historicoAgrupado = useMemo(
+    () => agruparHistoricoPorDia(historicoFiltrado),
+    [historicoFiltrado]
+  );
 
   function abrirRegistro(registro) {
     setRegistroSelecionado(registro);
@@ -147,9 +187,10 @@ function Historico() {
     <AppScreen style={styles.container}>
       <Menu />
 
-      <FlatList
-        data={historicoFiltrado}
+      <SectionList
+        sections={historicoAgrupado}
         keyExtractor={(item) => item.id}
+        stickySectionHeadersEnabled={false}
         ListHeaderComponent={
           <SearchBar
             valor={busca}
@@ -164,6 +205,11 @@ function Historico() {
               : "Nenhum atendimento concluído ainda."}
           </Text>
         }
+        renderSectionHeader={({ section: { title } }) => (
+          <View style={styles.secaoCabecalho}>
+            <Text style={styles.secaoTitulo}>{title}</Text>
+          </View>
+        )}
         renderItem={({ item }) => {
           const pet = obterPet(item.petId);
 
@@ -174,7 +220,8 @@ function Historico() {
               lamina={item.lamina}
               preco={item.preco}
               data={item.concluidoEm ?? item.data}
-              imagemUri={item.imagemUri}
+              rotuloTipoServico={textoIndicadorPacote(item)}
+              ehPacote={Boolean(item.pacoteId)}
               onPress={() => abrirRegistro(item)}
             />
           );
@@ -190,6 +237,12 @@ function Historico() {
         linhas={[
           { label: "Pet", valor: petSelecionado?.nome },
           { label: "Servico", valor: registroSelecionado?.servico },
+          {
+            label: "Tipo",
+            valor: registroSelecionado
+              ? textoIndicadorPacote(registroSelecionado)
+              : "",
+          },
           {
             label: "Data agendada",
             valor: registroSelecionado

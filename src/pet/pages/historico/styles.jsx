@@ -18,6 +18,18 @@ export const styles = StyleSheet.create({
     marginTop: 30,
   },
 
+  secaoCabecalho: {
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+
+  secaoTitulo: {
+    color: "#2f5d3a",
+    fontSize: 16,
+    fontWeight: "800",
+    textTransform: "capitalize",
+  },
+
   botaoSecundario: {
     flex: 1,
     backgroundColor: "#eef4ff",

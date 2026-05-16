@@ -8,18 +8,31 @@ function CardAgendamento({
   data,
   pago,
   porte,
+  rotuloTipoServico,
+  ehPacote,
   onPress,
   onTogglePago,
   onConcluir,
   onCancelar,
 }) {
+  const mostrarTipoServico = Boolean(rotuloTipoServico);
+  const labelA11y = [
+    nomePet,
+    servico,
+    data,
+    mostrarTipoServico ? rotuloTipoServico : null,
+    `pagamento ${pago ? "pago" : "pendente"}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <TouchableOpacity
       style={[styles.card, pago && styles.cardPago]}
       onPress={onPress}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`${nomePet}, ${servico}, ${data}, pagamento ${pago ? "pago" : "pendente"}`}
+      accessibilityLabel={labelA11y}
     >
       <View style={styles.linhaTopo}>
         <Text style={styles.nome}>{nomePet}</Text>
@@ -28,6 +41,16 @@ function CardAgendamento({
           {pago ? "Pago" : "Pendente"}
         </Text>
       </View>
+
+      {mostrarTipoServico ? (
+        <View style={styles.linhaIndicador}>
+          <Text
+            style={[styles.etiqueta, ehPacote ? styles.etiquetaPacote : styles.etiquetaAvulso]}
+          >
+            {rotuloTipoServico}
+          </Text>
+        </View>
+      ) : null}
 
       <Text style={styles.raca}>{raca}</Text>
 

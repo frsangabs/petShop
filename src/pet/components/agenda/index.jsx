@@ -1,9 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./styles";
 
+const LARGURA_ITEM_DIA = 75;
+
 function formatarData(data) {
   return data.toLocaleDateString("pt-BR");
+}
+
+function mesmoMes(dataA, dataB) {
+  return (
+    dataA.getFullYear() === dataB.getFullYear() &&
+    dataA.getMonth() === dataB.getMonth()
+  );
 }
 
 function Agenda({
@@ -22,8 +31,8 @@ function Agenda({
   );
   const [horarioSelecionado, setHorarioSelecionado] = useState(null);
 
-  // Ref da FlatList horizontal para controlar o scroll
   const flatListDiasRef = useRef(null);
+  const scrollInicialAplicado = useRef(false);
 
   function gerarDiasDoMes(dataBase) {
     const ano = dataBase.getFullYear();
@@ -69,32 +78,45 @@ function Agenda({
     month: "long",
     year: "numeric",
   });
+  const mesCorrente = mesmoMes(mesVisivel, hoje);
+  const indiceDiaHoje = hoje.getDate() - 1;
+  const indiceScrollInicial = mesCorrente ? indiceDiaHoje : 0;
 
-  // Sempre que o mês visível mudar, rola para o dia selecionado (ou dia atual se for o mês atual)
-  useEffect(() => {
-    const anoHoje = hoje.getFullYear();
-    const mesHoje = hoje.getMonth();
-    const anoVisivel = mesVisivel.getFullYear();
-    const mesAtualVisivel = mesVisivel.getMonth();
+  const rolarParaIndice = useCallback(
+    (indice, animado = true) => {
+      if (indice < 0 || indice >= dias.length) {
+        return;
+      }
 
-    // Se está exibindo o mês atual, rola para o dia de hoje (índice = dia - 1)
-    // Caso contrário, rola para o início (índice 0)
-    const indiceAlvo =
-      anoVisivel === anoHoje && mesAtualVisivel === mesHoje
-        ? hoje.getDate() - 1
-        : 0;
-
-    // Aguarda a lista renderizar antes de rolar
-    const timeout = setTimeout(() => {
       flatListDiasRef.current?.scrollToIndex({
-        index: indiceAlvo,
-        animated: true,
-        viewPosition: 0, // Alinha o item no início da lista visível
+        index: indice,
+        animated: animado,
+        viewPosition: 0,
       });
-    }, 100);
+    },
+    [dias.length]
+  );
+
+  useEffect(() => {
+    const indiceAlvo = mesCorrente
+      ? indiceDiaHoje
+      : Math.max(0, dataSelecionada.getDate() - 1);
+
+    const animado = scrollInicialAplicado.current;
+    const timeout = setTimeout(() => {
+      rolarParaIndice(indiceAlvo, animado);
+      scrollInicialAplicado.current = true;
+    }, 80);
 
     return () => clearTimeout(timeout);
-  }, [mesVisivel]);
+  }, [
+    mesVisivel,
+    dias.length,
+    mesCorrente,
+    indiceDiaHoje,
+    dataSelecionada,
+    rolarParaIndice,
+  ]);
 
   return (
     <FlatList
@@ -135,25 +157,21 @@ function Agenda({
 
           <FlatList
             ref={flatListDiasRef}
+            key={`${mesVisivel.getFullYear()}-${mesVisivel.getMonth()}`}
             data={dias}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.barraDias}
             keyExtractor={(item) => item.dia.toString()}
-            // Necessário para scrollToIndex funcionar corretamente
+            initialScrollIndex={indiceScrollInicial}
             getItemLayout={(_, index) => ({
-              length: 56, // Ajuste conforme a largura real do item de dia no seu styles
-              offset: 56 * index,
+              length: LARGURA_ITEM_DIA,
+              offset: LARGURA_ITEM_DIA * index,
               index,
             })}
             onScrollToIndexFailed={(info) => {
-              // Fallback: aguarda mais tempo e tenta novamente
               setTimeout(() => {
-                flatListDiasRef.current?.scrollToIndex({
-                  index: info.index,
-                  animated: true,
-                  viewPosition: 0,
-                });
+                rolarParaIndice(info.index, false);
               }, 300);
             }}
             renderItem={({ item }) => {
