@@ -265,14 +265,6 @@ function NovoAgendamento() {
               >
                 <Text style={styles.botaoFecharTexto}>X</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.botaoSair}
-                onPress={voltarParaAgenda}
-                accessibilityRole="button"
-                accessibilityLabel="Cancelar novo agendamento"
-              >
-                <Text style={styles.textoSair}>Cancelar</Text>
-              </TouchableOpacity>
             </View>
           </View>
 

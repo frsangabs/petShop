@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Picker } from "@react-native-picker/picker";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { styles } from "./styles";
@@ -26,6 +27,34 @@ function CardCriarPet({
   onSalvar,
   onCancelar,
 }) {
+  const [buscaDono, setBuscaDono] = useState("");
+  const [listaAberta, setListaAberta] = useState(false);
+
+  const donoSelecionado = donoId ? donos.find((d) => d.id === donoId) : null;
+
+  const donosFiltrados = donos
+    .filter((d) => {
+      if (!buscaDono.trim()) return true;
+      const texto = buscaDono.toLowerCase();
+      return (
+        d.nome.toLowerCase().includes(texto) ||
+        (d.telefone && d.telefone.includes(buscaDono))
+      );
+    })
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  function selecionarDono(item) {
+    setDonoId(item.id);
+    setBuscaDono("");
+    setListaAberta(false);
+  }
+
+  function limparDonoSelecionado() {
+    setDonoId("");
+    setBuscaDono("");
+    setListaAberta(false);
+  }
+
   return (
     <View style={styles.card}>
       <View style={styles.cabecalho}>
@@ -39,14 +68,6 @@ function CardCriarPet({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={styles.botaoFecharTexto}>X</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.botaoSair}
-            onPress={onCancelar}
-            accessibilityRole="button"
-            accessibilityLabel="Cancelar cadastro de pet"
-          >
-            <Text style={styles.textoSair}>Cancelar</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -104,25 +125,73 @@ function CardCriarPet({
       {usarDonoExistente ? (
         <View style={styles.campo}>
           <Text style={styles.label}>Dono existente</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={donoId}
-              onValueChange={(value) => setDonoId(value)}
-              style={styles.picker}
-              dropdownIconColor="#333"
-            >
-              <Picker.Item label="Selecione um dono" value="" color="#999" />
-              {donos.map((item) => (
-                <Picker.Item
-                  key={item.id}
-                  label={`${item.nome} - ${item.telefone}`}
-                  value={item.id}
-                  color="#333"
-                />
-              ))}
-            </Picker>
-          </View>
-          {erros.donoId ? <Text style={styles.erroCampo}>{erros.donoId}</Text> : null}
+
+          {donoSelecionado ? (
+            <View style={styles.donoSelecionado}>
+              <Text style={styles.donoSelecionadoTexto} numberOfLines={1}>
+                {donoSelecionado.nome} — {donoSelecionado.telefone}
+              </Text>
+              <TouchableOpacity
+                onPress={limparDonoSelecionado}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Remover dono selecionado"
+              >
+                <Text style={styles.donoSelecionadoLimpar}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <TextInput
+                placeholder="Buscar dono por nome ou telefone..."
+                value={buscaDono}
+                onChangeText={(texto) => {
+                  setBuscaDono(texto);
+                  if (!listaAberta) setListaAberta(true);
+                }}
+                onFocus={() => setListaAberta(true)}
+                style={styles.input}
+                placeholderTextColor="#999"
+                accessibilityLabel="Buscar dono existente"
+              />
+              {listaAberta && (
+                <View style={styles.listaResultados}>
+                  {donosFiltrados.length > 0 ? (
+                    <>
+                      {donosFiltrados.slice(0, 5).map((item) => (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={styles.itemResultado}
+                          onPress={() => selecionarDono(item)}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.itemResultadoNome}>
+                            {item.nome}
+                          </Text>
+                          <Text style={styles.itemResultadoTelefone}>
+                            {item.telefone}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      {donosFiltrados.length > 5 && (
+                        <Text style={styles.maisResultados}>
+                          Refine a busca… ({donosFiltrados.length} encontrados)
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <Text style={styles.semResultados}>
+                      Nenhum dono encontrado
+                    </Text>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+
+          {erros.donoId ? (
+            <Text style={styles.erroCampo}>{erros.donoId}</Text>
+          ) : null}
         </View>
       ) : (
         <>

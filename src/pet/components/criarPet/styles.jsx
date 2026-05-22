@@ -196,4 +196,71 @@ export const styles = StyleSheet.create({
     color: "#F44336",
     fontWeight: "700",
   },
+
+  donoSelecionado: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e8f5e9",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    minHeight: 48,
+  },
+
+  donoSelecionadoTexto: {
+    flex: 1,
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "600",
+  },
+
+  donoSelecionadoLimpar: {
+    color: "#999",
+    fontSize: 16,
+    fontWeight: "bold",
+    paddingLeft: 10,
+  },
+
+  listaResultados: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e6e6e6",
+    marginTop: -6,
+    marginBottom: 10,
+  },
+
+  itemResultado: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+
+  itemResultadoNome: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "600",
+  },
+
+  itemResultadoTelefone: {
+    fontSize: 12,
+    color: "#777",
+    marginTop: 2,
+  },
+
+  semResultados: {
+    padding: 12,
+    fontSize: 13,
+    color: "#999",
+    textAlign: "center",
+  },
+
+  maisResultados: {
+    padding: 10,
+    fontSize: 12,
+    color: "#999",
+    textAlign: "center",
+    fontStyle: "italic",
+  },
 });
