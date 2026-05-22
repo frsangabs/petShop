@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { FlatList, Text } from "react-native";
-import { confirmarDescarteEdicao } from "../../utils/confirmarFechar";
 import AppScreen from "../../components/appScreen";
 import CardDono from "../../components/cardDonos";
 import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
+import { confirmarDescarteEdicao } from "../../utils/confirmarFechar";
 import { styles } from "./styles";
 
 function Donos() {
@@ -30,7 +30,8 @@ function Donos() {
 
   const donosFiltrados = donos.filter((dono) =>
     contemBusca(dono.nome, dono.telefone, petsDoDono(dono.id).join(" "))
-  );
+  )
+  .sort((a, b) => (a.nome ?? "").localeCompare(b.nome ?? ""));
 
   function abrirDono(dono) {
     setDonoSelecionado(dono);

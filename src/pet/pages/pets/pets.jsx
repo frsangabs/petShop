@@ -7,8 +7,8 @@ import DetalhesModal from "../../components/detalhesModal";
 import Menu from "../../components/navbar";
 import SearchBar from "../../components/searchBar";
 import { usePetShop } from "../../context/PetShopContext";
-import { dataHoraParaTempo } from "../../utils/formatadores";
 import { confirmarDescarteEdicao } from "../../utils/confirmarFechar";
+import { dataHoraParaTempo } from "../../utils/formatadores";
 import { selecionarImagemLeve } from "../../utils/selecionarImagem";
 import { styles } from "./styles";
 
@@ -49,7 +49,8 @@ function Pets() {
   const petsFiltrados = pets.filter((pet) => {
     const dono = obterDono(pet.donoId);
     return contemBusca(pet.nome, pet.raca, pet.porte, dono?.nome, dono?.telefone);
-  });
+  })
+  .sort((a, b) => (a.nome ?? "").localeCompare(b.nome ?? ""));
 
   function abrirPet(pet) {
     const dono = obterDono(pet.donoId);
